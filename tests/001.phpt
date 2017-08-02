@@ -1,5 +1,5 @@
 --TEST--
-FPM: version string
+FPMI: version string
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -7,14 +7,14 @@ FPM: version string
 
 include "include.inc";
 
-$php = get_fpm_path();
+$php = get_fpmi_path();
 
 var_dump(`$php -n -v`);
 
 echo "Done\n";
 ?>
 --EXPECTF--
-string(%d) "PHP %s (fpm%s (built: %s
+string(%d) "PHP %s (fpmi%s (built: %s
 Copyright (c) 1997-20%s The PHP Group
 Zend Engine v%s, Copyright (c) 1998-20%s Zend Technologies
 "

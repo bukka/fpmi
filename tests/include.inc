@@ -1,6 +1,6 @@
 <?php
 
-function get_fpm_path() /* {{{ */
+function get_fpmi_path() /* {{{ */
 {
 	$php_path = getenv("TEST_PHP_EXECUTABLE");
 	for ($i = 0; $i < 2; $i++) {
@@ -14,22 +14,22 @@ function get_fpm_path() /* {{{ */
 
 
 	if ($php_path && is_dir($php_path)) {
-		if (file_exists($php_path."/fpm/php-fpm") && is_executable($php_path."/fpm/php-fpm")) {
+		if (file_exists($php_path."/fpmi/php-fpmi") && is_executable($php_path."/fpmi/php-fpmi")) {
 			/* gotcha */
-			return $php_path."/fpm/php-fpm";
+			return $php_path."/fpmi/php-fpmi";
 		}
-		$php_sbin_fpm = $php_path."/sbin/php-fpm";
-		if (file_exists($php_sbin_fpm) && is_executable($php_sbin_fpm)) {
-			return $php_sbin_fpm;
+		$php_sbin_fpmi = $php_path."/sbin/php-fpmi";
+		if (file_exists($php_sbin_fpmi) && is_executable($php_sbin_fpmi)) {
+			return $php_sbin_fpmi;
 		}
 	}
 	return false;
 }
 /* }}} */
 
-function run_fpm($config, &$out = false, $extra_args = '') /* {{{ */
+function run_fpmi($config, &$out = false, $extra_args = '') /* {{{ */
 {
-    $cfg = dirname(__FILE__).'/test-fpm-config.tmp';
+    $cfg = dirname(__FILE__).'/test-fpmi-config.tmp';
     file_put_contents($cfg, $config);
     $desc = [];
     if ($out !== false) {
@@ -37,34 +37,34 @@ function run_fpm($config, &$out = false, $extra_args = '') /* {{{ */
     }
     /* Since it's not possible to spawn a process under linux without using a
      * shell in php (why?!?) we need a little shell trickery, so that we can
-     * actually kill php-fpm */
-    $asroot = getenv('TEST_FPM_RUN_AS_ROOT') ? '--allow-to-run-as-root' : '';
-    $cmd = get_fpm_path()." $asroot -F -O -y $cfg $extra_args";
-    $fpm = proc_open("killit () { kill \$child; }; trap killit TERM; $cmd 2>&1 & child=\$!; wait",
+     * actually kill php-fpmi */
+    $asroot = getenv('TEST_FPMI_RUN_AS_ROOT') ? '--allow-to-run-as-root' : '';
+    $cmd = get_fpmi_path()." $asroot -F -O -y $cfg $extra_args";
+    $fpmi = proc_open("killit () { kill \$child; }; trap killit TERM; $cmd 2>&1 & child=\$!; wait",
                      $desc, $pipes);
     register_shutdown_function(
-            function($fpm) use($cfg) {
+            function($fpmi) use($cfg) {
                     @unlink($cfg);
-                    if (is_resource($fpm)) {
-                        @proc_terminate($fpm);
-                        while (proc_get_status($fpm)['running']) {
+                    if (is_resource($fpmi)) {
+                        @proc_terminate($fpmi);
+                        while (proc_get_status($fpmi)['running']) {
                             usleep(10000);
                         }
                     }
             },
-                    $fpm
+                    $fpmi
             );
     if ($out !== false) {
         $out = $pipes[1];
     }
-    return $fpm;
+    return $fpmi;
 }
 /* }}} */
 
-function test_fpm_conf($config, &$msg = NULL) { /* {{{ */
-	$cfg = dirname(__FILE__).'/test-fpm-config.tmp';
+function test_fpmi_conf($config, &$msg = NULL) { /* {{{ */
+	$cfg = dirname(__FILE__).'/test-fpmi-config.tmp';
 	file_put_contents($cfg, $config);
-	exec(get_fpm_path() . ' -t -y ' . $cfg . ' 2>&1', $output, $code);	
+	exec(get_fpmi_path() . ' -t -y ' . $cfg . ' 2>&1', $output, $code);	
 	if ($code) {
 		$msg = preg_replace("/\[.+?\]/", "", $output[0]);
 		return false;
@@ -73,11 +73,11 @@ function test_fpm_conf($config, &$msg = NULL) { /* {{{ */
 }
 /* }}} */
 
-function run_fpm_till($needle, $config, $max = 10) /* {{{ */
+function run_fpmi_till($needle, $config, $max = 10) /* {{{ */
 {
     $i = 0;
-    $fpm = run_fpm($config, $tail);
-    if (is_resource($fpm)) {
+    $fpmi = run_fpmi($config, $tail);
+    if (is_resource($fpmi)) {
         while($i < $max) {
             $i++;
             $line = fgets($tail);
@@ -88,16 +88,16 @@ function run_fpm_till($needle, $config, $max = 10) /* {{{ */
         if ($i >= $max) {
             $line = false;
         }
-        proc_terminate($fpm);
+        proc_terminate($fpmi);
         stream_get_contents($tail);
         fclose($tail);
-        proc_close($fpm);
+        proc_close($fpmi);
     }
     return $line;
 }
 /* }}} */
 
-function fpm_display_log($tail, $n=1, $ignore='systemd') { /* {{{ */
+function fpmi_display_log($tail, $n=1, $ignore='systemd') { /* {{{ */
 	/* Read $n lines or until EOF */
 	while ($n>0 || ($n<0 && !feof($tail))) {
 		$a = fgets($tail);

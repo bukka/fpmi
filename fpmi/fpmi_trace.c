@@ -1,14 +1,14 @@
 
-	/* $Id: fpm_trace.c,v 1.1 2008/07/20 20:59:00 anight Exp $ */
+	/* $Id: fpmi_trace.c,v 1.1 2008/07/20 20:59:00 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <sys/types.h>
 
-#include "fpm_trace.h"
+#include "fpmi_trace.h"
 
-int fpm_trace_get_strz(char *buf, size_t sz, long addr) /* {{{ */
+int fpmi_trace_get_strz(char *buf, size_t sz, long addr) /* {{{ */
 {
 	int i;
 	long l = addr;
@@ -17,7 +17,7 @@ int fpm_trace_get_strz(char *buf, size_t sz, long addr) /* {{{ */
 	i = l % SIZEOF_LONG;
 	l -= i;
 	for (addr = l; ; addr += SIZEOF_LONG) {
-		if (0 > fpm_trace_get_long(addr, &l)) {
+		if (0 > fpmi_trace_get_long(addr, &l)) {
 			return -1;
 		}
 		for ( ; i < SIZEOF_LONG; i++) {

@@ -18,9 +18,9 @@
 
 /* $Id$ */
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
-#include "../fpm.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
+#include "../fpmi.h"
 #include "../zlog.h"
 
 #if HAVE_KQUEUE
@@ -31,20 +31,20 @@
 
 #include <errno.h>
 
-static int fpm_event_kqueue_init(int max);
-static int fpm_event_kqueue_clean();
-static int fpm_event_kqueue_wait(struct fpm_event_queue_s *queue, unsigned long int timeout);
-static int fpm_event_kqueue_add(struct fpm_event_s *ev);
-static int fpm_event_kqueue_remove(struct fpm_event_s *ev);
+static int fpmi_event_kqueue_init(int max);
+static int fpmi_event_kqueue_clean();
+static int fpmi_event_kqueue_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout);
+static int fpmi_event_kqueue_add(struct fpmi_event_s *ev);
+static int fpmi_event_kqueue_remove(struct fpmi_event_s *ev);
 
-static struct fpm_event_module_s kqueue_module = {
+static struct fpmi_event_module_s kqueue_module = {
 	.name = "kqueue",
 	.support_edge_trigger = 1,
-	.init = fpm_event_kqueue_init,
-	.clean = fpm_event_kqueue_clean,
-	.wait = fpm_event_kqueue_wait,
-	.add = fpm_event_kqueue_add,
-	.remove = fpm_event_kqueue_remove,
+	.init = fpmi_event_kqueue_init,
+	.clean = fpmi_event_kqueue_clean,
+	.wait = fpmi_event_kqueue_wait,
+	.add = fpmi_event_kqueue_add,
+	.remove = fpmi_event_kqueue_remove,
 };
 
 static struct kevent *kevents = NULL;
@@ -56,7 +56,7 @@ static int kfd = 0;
 /*
  * Return the module configuration
  */
-struct fpm_event_module_s *fpm_event_kqueue_module() /* {{{ */
+struct fpmi_event_module_s *fpmi_event_kqueue_module() /* {{{ */
 {
 #if HAVE_KQUEUE
 	return &kqueue_module;
@@ -71,7 +71,7 @@ struct fpm_event_module_s *fpm_event_kqueue_module() /* {{{ */
 /*
  * init kqueue and stuff
  */
-static int fpm_event_kqueue_init(int max) /* {{{ */
+static int fpmi_event_kqueue_init(int max) /* {{{ */
 {
 	if (max < 1) {
 		return 0;
@@ -100,7 +100,7 @@ static int fpm_event_kqueue_init(int max) /* {{{ */
 /*
  * release kqueue stuff
  */
-static int fpm_event_kqueue_clean() /* {{{ */
+static int fpmi_event_kqueue_clean() /* {{{ */
 {
 	if (kevents) {
 		free(kevents);
@@ -116,7 +116,7 @@ static int fpm_event_kqueue_clean() /* {{{ */
 /*
  * wait for events or timeout
  */
-static int fpm_event_kqueue_wait(struct fpm_event_queue_s *queue, unsigned long int timeout) /* {{{ */
+static int fpmi_event_kqueue_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout) /* {{{ */
 {
 	struct timespec t;
 	int ret, i;
@@ -142,10 +142,10 @@ static int fpm_event_kqueue_wait(struct fpm_event_queue_s *queue, unsigned long 
 	/* fire triggered events */
 	for (i = 0; i < ret; i++) {
 		if (kevents[i].udata) {
-			struct fpm_event_s *ev = (struct fpm_event_s *)kevents[i].udata;
-			fpm_event_fire(ev);
+			struct fpmi_event_s *ev = (struct fpmi_event_s *)kevents[i].udata;
+			fpmi_event_fire(ev);
 			/* sanity check */
-			if (fpm_globals.parent_pid != getpid()) {
+			if (fpmi_globals.parent_pid != getpid()) {
 				return -2;
 			}
 		}
@@ -158,12 +158,12 @@ static int fpm_event_kqueue_wait(struct fpm_event_queue_s *queue, unsigned long 
 /*
  * Add a FD to to kevent queue
  */
-static int fpm_event_kqueue_add(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_kqueue_add(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct kevent k;
 	int flags = EV_ADD;
 
-	if (ev->flags & FPM_EV_EDGE) {
+	if (ev->flags & FPMI_EV_EDGE) {
 			flags = flags | EV_CLEAR;
 	}
 
@@ -183,12 +183,12 @@ static int fpm_event_kqueue_add(struct fpm_event_s *ev) /* {{{ */
 /*
  * Remove a FD from the kevent queue
  */
-static int fpm_event_kqueue_remove(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_kqueue_remove(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct kevent k;
 	int flags = EV_DELETE;
 
-	if (ev->flags & FPM_EV_EDGE) {
+	if (ev->flags & FPMI_EV_EDGE) {
 			flags = flags | EV_CLEAR;
 	}
 

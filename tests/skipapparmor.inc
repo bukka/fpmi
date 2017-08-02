@@ -1,6 +1,6 @@
 <?php
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
 $cfg = <<<EOT
 [global]
 error_log = $logfile
@@ -14,14 +14,14 @@ pm.max_spare_servers = 3
 apparmor_hat = a
 EOT;
 
-$fpm = run_fpm($cfg, $out, '-t');
+$fpmi = run_fpmi($cfg, $out, '-t');
 $ok = false;
-if (is_resource($fpm)) {
+if (is_resource($fpmi)) {
     if (strpos(stream_get_contents($out), "test is successful") !== FALSE) {
         $ok = true;
     }
     fclose($out);
-    proc_close($fpm);
+    proc_close($fpmi);
 }
 if (!$ok) {
     die("skip No apparmor support built in");

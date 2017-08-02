@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test status page
+FPMI: Test status page
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --XFAIL--
@@ -13,7 +13,7 @@ randomly intermittently failing all the time in CI, with diff:
 
 include "include.inc";
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
 $port = 9000+PHP_INT_SIZE;
 
 $cfg = <<<EOT
@@ -26,14 +26,14 @@ pm = static
 pm.max_children = 1
 EOT;
 
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
-    fpm_display_log($tail, 2);
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
+    fpmi_display_log($tail, 2);
     try {
 		echo run_request('127.0.0.1', $port, '/status');
 
 		$html = run_request('127.0.0.1', $port, '/status', 'html');
-		var_dump(strpos($html, 'text/html') && strpos($html, 'DOCTYPE') && strpos($html, 'PHP-FPM Status Page'));
+		var_dump(strpos($html, 'text/html') && strpos($html, 'DOCTYPE') && strpos($html, 'PHP-FPMI Status Page'));
 
 		$json = run_request('127.0.0.1', $port, '/status', 'json');
 		var_dump(strpos($json, 'application/json') && strpos($json, '"pool":"unconfined"'));
@@ -46,15 +46,15 @@ if (is_resource($fpm)) {
 		echo "IPv4 error\n";
 	}
 
-	proc_terminate($fpm);
+	proc_terminate($fpmi);
     stream_get_contents($tail);
     fclose($tail);
-    proc_close($fpm);
+    proc_close($fpmi);
 }
 
 ?>
 --EXPECTF--
-[%d-%s-%d %d:%d:%d] NOTICE: fpm is running, pid %d
+[%d-%s-%d %d:%d:%d] NOTICE: fpmi is running, pid %d
 [%d-%s-%d %d:%d:%d] NOTICE: ready to handle connections
 X-Powered-By: PHP/%s
 Expires: %s
@@ -82,6 +82,6 @@ bool(true)
 IPv4 ok
 --CLEAN--
 <?php
-    $logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+    $logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
     @unlink($logfile);
 ?>

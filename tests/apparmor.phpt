@@ -1,5 +1,5 @@
 --TEST--
-FPM: Apparmor Test
+FPMI: Apparmor Test
 --DESCRIPTION--
 This test tries to launches a pool which tries to change to non existing
 apparmor hat a. Test succeeds if apparmor is not running or hat is non
@@ -15,7 +15,7 @@ include "skipapparmor.inc";
 
 include "include.inc";
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
 
 $cfg = <<<EOT
 [global]
@@ -41,7 +41,7 @@ EOT;
    - exited with code 70
      Change to successful; Hat not existent (Process gets killed by apparmor)
  */
-var_dump(run_fpm_till('/(SIGSEGV|failed to query apparmor confinement|failed to change to new confinement|exited with code 70)/', $cfg));
+var_dump(run_fpmi_till('/(SIGSEGV|failed to query apparmor confinement|failed to change to new confinement|exited with code 70)/', $cfg));
 
 ?>
 --EXPECTF--
@@ -49,6 +49,6 @@ string(%d) "%s
 "
 --CLEAN--
 <?php
-    $logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+    $logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
     @unlink($logfile);
 ?>

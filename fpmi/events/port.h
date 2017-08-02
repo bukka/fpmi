@@ -18,12 +18,12 @@
 
 /* $Id$ */
 
-#ifndef FPM_EVENTS_PORT_H
-#define FPM_EVENTS_PORT_H
+#ifndef FPMI_EVENTS_PORT_H
+#define FPMI_EVENTS_PORT_H
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
 
-struct fpm_event_module_s *fpm_event_port_module();
+struct fpmi_event_module_s *fpmi_event_port_module();
 
-#endif /* FPM_EVENTS_PORT_H */
+#endif /* FPMI_EVENTS_PORT_H */

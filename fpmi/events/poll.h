@@ -18,12 +18,12 @@
 
 /* $Id$ */
 
-#ifndef FPM_EVENTS_POLL_H
-#define FPM_EVENTS_POLL_H
+#ifndef FPMI_EVENTS_POLL_H
+#define FPMI_EVENTS_POLL_H
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
 
-struct fpm_event_module_s *fpm_event_poll_module();
+struct fpmi_event_module_s *fpmi_event_poll_module();
 
-#endif /* FPM_EVENTS_POLL_H */
+#endif /* FPMI_EVENTS_POLL_H */

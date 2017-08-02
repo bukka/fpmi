@@ -18,9 +18,9 @@
 
 /* $Id$ */
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
-#include "../fpm.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
+#include "../fpmi.h"
 #include "../zlog.h"
 
 #if HAVE_PORT
@@ -29,20 +29,20 @@
 #include <poll.h>
 #include <errno.h>
 
-static int fpm_event_port_init(int max);
-static int fpm_event_port_clean();
-static int fpm_event_port_wait(struct fpm_event_queue_s *queue, unsigned long int timeout);
-static int fpm_event_port_add(struct fpm_event_s *ev);
-static int fpm_event_port_remove(struct fpm_event_s *ev);
+static int fpmi_event_port_init(int max);
+static int fpmi_event_port_clean();
+static int fpmi_event_port_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout);
+static int fpmi_event_port_add(struct fpmi_event_s *ev);
+static int fpmi_event_port_remove(struct fpmi_event_s *ev);
 
-static struct fpm_event_module_s port_module = {
+static struct fpmi_event_module_s port_module = {
 	.name = "port",
 	.support_edge_trigger = 0,
-	.init = fpm_event_port_init,
-	.clean = fpm_event_port_clean,
-	.wait = fpm_event_port_wait,
-	.add = fpm_event_port_add,
-	.remove = fpm_event_port_remove,
+	.init = fpmi_event_port_init,
+	.clean = fpmi_event_port_clean,
+	.wait = fpmi_event_port_wait,
+	.add = fpmi_event_port_add,
+	.remove = fpmi_event_port_remove,
 };
 
 port_event_t *events = NULL;
@@ -51,7 +51,7 @@ static int pfd = -1;
 
 #endif /* HAVE_PORT */
 
-struct fpm_event_module_s *fpm_event_port_module() /* {{{ */
+struct fpmi_event_module_s *fpmi_event_port_module() /* {{{ */
 {
 #if HAVE_PORT
 	return &port_module;
@@ -66,7 +66,7 @@ struct fpm_event_module_s *fpm_event_port_module() /* {{{ */
 /*
  * Init the module
  */
-static int fpm_event_port_init(int max) /* {{{ */
+static int fpmi_event_port_init(int max) /* {{{ */
 {
 	/* open port */
 	pfd = port_create();
@@ -94,7 +94,7 @@ static int fpm_event_port_init(int max) /* {{{ */
 /*
  * Clean the module
  */
-static int fpm_event_port_clean() /* {{{ */
+static int fpmi_event_port_clean() /* {{{ */
 {
 	if (pfd > -1) {
 		close(pfd);
@@ -114,7 +114,7 @@ static int fpm_event_port_clean() /* {{{ */
 /*
  * wait for events or timeout
  */
-static int fpm_event_port_wait(struct fpm_event_queue_s *queue, unsigned long int timeout) /* {{{ */
+static int fpmi_event_port_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout) /* {{{ */
 {
 	int ret, i, nget;
 	timespec_t t;
@@ -143,10 +143,10 @@ static int fpm_event_port_wait(struct fpm_event_queue_s *queue, unsigned long in
 		}
 
 		/* fire the event */
-		fpm_event_fire((struct fpm_event_s *)events[i].portev_user);
+		fpmi_event_fire((struct fpmi_event_s *)events[i].portev_user);
 
 		/* sanity check */
-		if (fpm_globals.parent_pid != getpid()) {
+		if (fpmi_globals.parent_pid != getpid()) {
 			return -2;
 		}
 	}
@@ -157,7 +157,7 @@ static int fpm_event_port_wait(struct fpm_event_queue_s *queue, unsigned long in
 /*
  * Add a FD to the fd set
  */
-static int fpm_event_port_add(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_port_add(struct fpmi_event_s *ev) /* {{{ */
 {
 	/* add the event to port */
 	if (port_associate(pfd, PORT_SOURCE_FD, ev->fd, POLLIN, (void *)ev) < 0) {
@@ -171,7 +171,7 @@ static int fpm_event_port_add(struct fpm_event_s *ev) /* {{{ */
 /*
  * Remove a FD from the fd set
  */
-static int fpm_event_port_remove(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_port_remove(struct fpmi_event_s *ev) /* {{{ */
 {
 	/* remove the event from port */
 	if (port_dissociate(pfd, PORT_SOURCE_FD, ev->fd) < 0) {

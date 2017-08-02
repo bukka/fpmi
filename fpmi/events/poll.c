@@ -18,9 +18,9 @@
 
 /* $Id$ */
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
-#include "../fpm.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
+#include "../fpmi.h"
 #include "../zlog.h"
 
 #if HAVE_POLL
@@ -29,20 +29,20 @@
 #include <errno.h>
 #include <string.h>
 
-static int fpm_event_poll_init(int max);
-static int fpm_event_poll_clean();
-static int fpm_event_poll_wait(struct fpm_event_queue_s *queue, unsigned long int timeout);
-static int fpm_event_poll_add(struct fpm_event_s *ev);
-static int fpm_event_poll_remove(struct fpm_event_s *ev);
+static int fpmi_event_poll_init(int max);
+static int fpmi_event_poll_clean();
+static int fpmi_event_poll_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout);
+static int fpmi_event_poll_add(struct fpmi_event_s *ev);
+static int fpmi_event_poll_remove(struct fpmi_event_s *ev);
 
-static struct fpm_event_module_s poll_module = {
+static struct fpmi_event_module_s poll_module = {
 	.name = "poll",
 	.support_edge_trigger = 0,
-	.init = fpm_event_poll_init,
-	.clean = fpm_event_poll_clean,
-	.wait = fpm_event_poll_wait,
-	.add = fpm_event_poll_add,
-	.remove = fpm_event_poll_remove,
+	.init = fpmi_event_poll_init,
+	.clean = fpmi_event_poll_clean,
+	.wait = fpmi_event_poll_wait,
+	.add = fpmi_event_poll_add,
+	.remove = fpmi_event_poll_remove,
 };
 
 static struct pollfd *pollfds = NULL;
@@ -54,7 +54,7 @@ static int next_free_slot = 0;
 /*
  * return the module configuration
  */
-struct fpm_event_module_s *fpm_event_poll_module() /* {{{ */
+struct fpmi_event_module_s *fpmi_event_poll_module() /* {{{ */
 {
 #if HAVE_POLL
 	return &poll_module;
@@ -69,7 +69,7 @@ struct fpm_event_module_s *fpm_event_poll_module() /* {{{ */
 /*
  * Init the module
  */
-static int fpm_event_poll_init(int max) /* {{{ */
+static int fpmi_event_poll_init(int max) /* {{{ */
 {
 	int i;
 
@@ -108,7 +108,7 @@ static int fpm_event_poll_init(int max) /* {{{ */
 /*
  * Clean the module
  */
-static int fpm_event_poll_clean() /* {{{ */
+static int fpmi_event_poll_clean() /* {{{ */
 {
 	/* free pollfds */
 	if (pollfds) {
@@ -130,10 +130,10 @@ static int fpm_event_poll_clean() /* {{{ */
 /*
  * wait for events or timeout
  */
-static int fpm_event_poll_wait(struct fpm_event_queue_s *queue, unsigned long int timeout) /* {{{ */
+static int fpmi_event_poll_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout) /* {{{ */
 {
 	int ret;
-	struct fpm_event_queue_s *q;
+	struct fpmi_event_queue_s *q;
 
 	if (npollfds > 0) {
 		/* copy pollfds because poll() alters it */
@@ -164,10 +164,10 @@ static int fpm_event_poll_wait(struct fpm_event_queue_s *queue, unsigned long in
 				if (active_pollfds[q->ev->index].revents & POLLIN) {
 
 					/* fire the event */
-					fpm_event_fire(q->ev);
+					fpmi_event_fire(q->ev);
 
 					/* sanity check */
-					if (fpm_globals.parent_pid != getpid()) {
+					if (fpmi_globals.parent_pid != getpid()) {
 						return -2;
 					}
 				}
@@ -183,7 +183,7 @@ static int fpm_event_poll_wait(struct fpm_event_queue_s *queue, unsigned long in
 /*
  * Add a FD to the fd set
  */
-static int fpm_event_poll_add(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_poll_add(struct fpmi_event_s *ev) /* {{{ */
 {
 	int i;
 
@@ -228,7 +228,7 @@ static int fpm_event_poll_add(struct fpm_event_s *ev) /* {{{ */
 /*
  * Remove a FD from the fd set
  */
-static int fpm_event_poll_remove(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_poll_remove(struct fpmi_event_s *ev) /* {{{ */
 {
 	int i;
 

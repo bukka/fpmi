@@ -1,13 +1,13 @@
-#ifndef FPM_SYSTEMD_H
-#define FPM_SYSTEMD_H 1
+#ifndef FPMI_SYSTEMD_H
+#define FPMI_SYSTEMD_H 1
 
-#include "fpm_events.h"
+#include "fpmi_events.h"
 
 /* 10s (in ms) heartbeat for systemd status */
-#define FPM_SYSTEMD_DEFAULT_HEARTBEAT (10000)
+#define FPMI_SYSTEMD_DEFAULT_HEARTBEAT (10000)
 
-void fpm_systemd_heartbeat(struct fpm_event_s *ev, short which, void *arg);
-int fpm_systemd_conf();
+void fpmi_systemd_heartbeat(struct fpmi_event_s *ev, short which, void *arg);
+int fpmi_systemd_conf();
 
 #endif
 

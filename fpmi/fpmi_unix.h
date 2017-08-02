@@ -1,20 +1,20 @@
 
-	/* $Id: fpm_unix.h,v 1.8 2008/05/25 13:21:13 anight Exp $ */
+	/* $Id: fpmi_unix.h,v 1.8 2008/05/25 13:21:13 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#ifndef FPM_UNIX_H
-#define FPM_UNIX_H 1
+#ifndef FPMI_UNIX_H
+#define FPMI_UNIX_H 1
 
-#include "fpm_worker_pool.h"
+#include "fpmi_worker_pool.h"
 
-int fpm_unix_resolve_socket_premissions(struct fpm_worker_pool_s *wp);
-int fpm_unix_set_socket_premissions(struct fpm_worker_pool_s *wp, const char *path);
-int fpm_unix_free_socket_premissions(struct fpm_worker_pool_s *wp);
+int fpmi_unix_resolve_socket_premissions(struct fpmi_worker_pool_s *wp);
+int fpmi_unix_set_socket_premissions(struct fpmi_worker_pool_s *wp, const char *path);
+int fpmi_unix_free_socket_premissions(struct fpmi_worker_pool_s *wp);
 
-int fpm_unix_init_child(struct fpm_worker_pool_s *wp);
-int fpm_unix_init_main();
+int fpmi_unix_init_child(struct fpmi_worker_pool_s *wp);
+int fpmi_unix_init_main();
 
-extern size_t fpm_pagesize;
+extern size_t fpmi_pagesize;
 
 #endif
 

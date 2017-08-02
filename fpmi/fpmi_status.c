@@ -6,31 +6,31 @@
 #include "SAPI.h"
 #include <stdio.h>
 
-#include "fpm_config.h"
-#include "fpm_scoreboard.h"
-#include "fpm_status.h"
-#include "fpm_clock.h"
-#include "fpm_scoreboard.h"
+#include "fpmi_config.h"
+#include "fpmi_scoreboard.h"
+#include "fpmi_status.h"
+#include "fpmi_clock.h"
+#include "fpmi_scoreboard.h"
 #include "zlog.h"
-#include "fpm_atomic.h"
-#include "fpm_conf.h"
-#include "fpm_php.h"
+#include "fpmi_atomic.h"
+#include "fpmi_conf.h"
+#include "fpmi_php.h"
 #include <ext/standard/html.h>
 
-static char *fpm_status_uri = NULL;
-static char *fpm_status_ping_uri = NULL;
-static char *fpm_status_ping_response = NULL;
+static char *fpmi_status_uri = NULL;
+static char *fpmi_status_ping_uri = NULL;
+static char *fpmi_status_ping_response = NULL;
 
 
-int fpm_status_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
+int fpmi_status_init_child(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	if (!wp || !wp->config) {
-		zlog(ZLOG_ERROR, "unable to init fpm_status because conf structure is NULL");
+		zlog(ZLOG_ERROR, "unable to init fpmi_status because conf structure is NULL");
 		return -1;
 	}
 
 	if (wp->config->pm_status_path) {
-		fpm_status_uri = strdup(wp->config->pm_status_path);
+		fpmi_status_uri = strdup(wp->config->pm_status_path);
 	}
 
 	if (wp->config->ping_path) {
@@ -38,18 +38,18 @@ int fpm_status_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 			zlog(ZLOG_ERROR, "[pool %s] ping is set (%s) but ping.response is not set.", wp->config->name, wp->config->ping_path);
 			return -1;
 		}
-		fpm_status_ping_uri = strdup(wp->config->ping_path);
-		fpm_status_ping_response = strdup(wp->config->ping_response);
+		fpmi_status_ping_uri = strdup(wp->config->ping_path);
+		fpmi_status_ping_response = strdup(wp->config->ping_response);
 	}
 
 	return 0;
 }
 /* }}} */
 
-int fpm_status_handle_request(void) /* {{{ */
+int fpmi_status_handle_request(void) /* {{{ */
 {
-	struct fpm_scoreboard_s scoreboard, *scoreboard_p;
-	struct fpm_scoreboard_proc_s proc;
+	struct fpmi_scoreboard_s scoreboard, *scoreboard_p;
+	struct fpmi_scoreboard_proc_s proc;
 	char *buffer, *time_format, time_buffer[64];
 	time_t now_epoch;
 	int full, encode;
@@ -62,8 +62,8 @@ int fpm_status_handle_request(void) /* {{{ */
 	}
 
 	/* PING */
-	if (fpm_status_ping_uri && fpm_status_ping_response && !strcmp(fpm_status_ping_uri, SG(request_info).request_uri)) {
-		fpm_request_executing();
+	if (fpmi_status_ping_uri && fpmi_status_ping_response && !strcmp(fpmi_status_ping_uri, SG(request_info).request_uri)) {
+		fpmi_request_executing();
 		sapi_add_header_ex(ZEND_STRL("Content-Type: text/plain"), 1, 1);
 		sapi_add_header_ex(ZEND_STRL("Expires: Thu, 01 Jan 1970 00:00:00 GMT"), 1, 1);
 		sapi_add_header_ex(ZEND_STRL("Cache-Control: no-cache, no-store, must-revalidate, max-age=0"), 1, 1);
@@ -74,15 +74,15 @@ int fpm_status_handle_request(void) /* {{{ */
 			return 1;
 		}
 
-		PUTS(fpm_status_ping_response);
+		PUTS(fpmi_status_ping_response);
 		return 1;
 	}
 
 	/* STATUS */
-	if (fpm_status_uri && !strcmp(fpm_status_uri, SG(request_info).request_uri)) {
-		fpm_request_executing();
+	if (fpmi_status_uri && !strcmp(fpmi_status_uri, SG(request_info).request_uri)) {
+		fpmi_request_executing();
 
-		scoreboard_p = fpm_scoreboard_get();
+		scoreboard_p = fpmi_scoreboard_get();
 		if (!scoreboard_p) {
 			zlog(ZLOG_ERROR, "status: unable to find or access status shared memory");
 			SG(sapi_headers).http_response_code = 500;
@@ -93,7 +93,7 @@ int fpm_status_handle_request(void) /* {{{ */
 			return 1;
 		}
 
-		if (!fpm_spinlock(&scoreboard_p->lock, 1)) {
+		if (!fpmi_spinlock(&scoreboard_p->lock, 1)) {
 			zlog(ZLOG_NOTICE, "[pool %s] status: scoreboard already in used.", scoreboard_p->pool);
 			SG(sapi_headers).http_response_code = 503;
 			sapi_add_header_ex(ZEND_STRL("Content-Type: text/plain"), 1, 1);
@@ -104,7 +104,7 @@ int fpm_status_handle_request(void) /* {{{ */
 		}
 		/* copy the scoreboard not to bother other processes */
 		scoreboard = *scoreboard_p;
-		fpm_unlock(scoreboard_p->lock);
+		fpmi_unlock(scoreboard_p->lock);
 
 		if (scoreboard.idle < 0 || scoreboard.active < 0) {
 			zlog(ZLOG_ERROR, "[pool %s] invalid status values", scoreboard.pool);
@@ -128,13 +128,13 @@ int fpm_status_handle_request(void) /* {{{ */
 
 		/* full status ? */
 		_GET_str = zend_string_init("_GET", sizeof("_GET")-1, 0);
-		full = (fpm_php_get_string_from_table(_GET_str, "full") != NULL);
+		full = (fpmi_php_get_string_from_table(_GET_str, "full") != NULL);
 		short_syntax = short_post = NULL;
 		full_separator = full_pre = full_syntax = full_post = NULL;
 		encode = 0;
 
 		/* HTML */
-		if (fpm_php_get_string_from_table(_GET_str, "html")) {
+		if (fpmi_php_get_string_from_table(_GET_str, "html")) {
 			sapi_add_header_ex(ZEND_STRL("Content-Type: text/html"), 1, 1);
 			time_format = "%d/%b/%Y:%H:%M:%S %z";
 			encode = 1;
@@ -142,7 +142,7 @@ int fpm_status_handle_request(void) /* {{{ */
 			short_syntax =
 				"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
 				"<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n"
-				"<head><title>PHP-FPM Status Page</title></head>\n"
+				"<head><title>PHP-FPMI Status Page</title></head>\n"
 				"<body>\n"
 				"<table>\n"
 					"<tr><th>pool</th><td>%s</td></tr>\n"
@@ -150,7 +150,7 @@ int fpm_status_handle_request(void) /* {{{ */
 					"<tr><th>start time</th><td>%s</td></tr>\n"
 					"<tr><th>start since</th><td>%lu</td></tr>\n"
 					"<tr><th>accepted conn</th><td>%lu</td></tr>\n"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 					"<tr><th>listen queue</th><td>%u</td></tr>\n"
 					"<tr><th>max listen queue</th><td>%u</td></tr>\n"
 					"<tr><th>listen queue len</th><td>%d</td></tr>\n"
@@ -180,7 +180,7 @@ int fpm_status_handle_request(void) /* {{{ */
 						"<th>content length</th>"
 						"<th>user</th>"
 						"<th>script</th>"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 						"<th>last request cpu</th>"
 #endif
 						"<th>last request memory</th>"
@@ -199,7 +199,7 @@ int fpm_status_handle_request(void) /* {{{ */
 						"<td>%zu</td>"
 						"<td>%s</td>"
 						"<td>%s</td>"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 						"<td>%.2f</td>"
 #endif
 						"<td>%zu</td>"
@@ -209,7 +209,7 @@ int fpm_status_handle_request(void) /* {{{ */
 			}
 
 		/* XML */
-		} else if (fpm_php_get_string_from_table(_GET_str, "xml")) {
+		} else if (fpmi_php_get_string_from_table(_GET_str, "xml")) {
 			sapi_add_header_ex(ZEND_STRL("Content-Type: text/xml"), 1, 1);
 			time_format = "%s";
 			encode = 1;
@@ -222,7 +222,7 @@ int fpm_status_handle_request(void) /* {{{ */
 				"<start-time>%s</start-time>\n"
 				"<start-since>%lu</start-since>\n"
 				"<accepted-conn>%lu</accepted-conn>\n"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 				"<listen-queue>%u</listen-queue>\n"
 				"<max-listen-queue>%u</max-listen-queue>\n"
 				"<listen-queue-len>%d</listen-queue-len>\n"
@@ -251,7 +251,7 @@ int fpm_status_handle_request(void) /* {{{ */
 							"<content-length>%zu</content-length>"
 							"<user>%s</user>"
 							"<script>%s</script>"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 							"<last-request-cpu>%.2f</last-request-cpu>"
 #endif
 							"<last-request-memory>%zu</last-request-memory>"
@@ -261,7 +261,7 @@ int fpm_status_handle_request(void) /* {{{ */
 				}
 
 			/* JSON */
-		} else if (fpm_php_get_string_from_table(_GET_str, "json")) {
+		} else if (fpmi_php_get_string_from_table(_GET_str, "json")) {
 			sapi_add_header_ex(ZEND_STRL("Content-Type: application/json"), 1, 1);
 			time_format = "%s";
 
@@ -272,7 +272,7 @@ int fpm_status_handle_request(void) /* {{{ */
 				"\"start time\":%s,"
 				"\"start since\":%lu,"
 				"\"accepted conn\":%lu,"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 				"\"listen queue\":%u,"
 				"\"max listen queue\":%u,"
 				"\"listen queue len\":%d,"
@@ -302,7 +302,7 @@ int fpm_status_handle_request(void) /* {{{ */
 					"\"content length\":%zu,"
 					"\"user\":\"%s\","
 					"\"script\":\"%s\","
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 					"\"last request cpu\":%.2f,"
 #endif
 					"\"last request memory\":%zu"
@@ -322,7 +322,7 @@ int fpm_status_handle_request(void) /* {{{ */
 				"start time:           %s\n"
 				"start since:          %lu\n"
 				"accepted conn:        %lu\n"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 				"listen queue:         %u\n"
 				"max listen queue:     %u\n"
 				"listen queue len:     %d\n"
@@ -349,7 +349,7 @@ int fpm_status_handle_request(void) /* {{{ */
 						"content length:       %zu\n"
 						"user:                 %s\n"
 						"script:               %s\n"
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 						"last request cpu:     %.2f\n"
 #endif
 						"last request memory:  %zu\n";
@@ -364,7 +364,7 @@ int fpm_status_handle_request(void) /* {{{ */
 				time_buffer,
 				now_epoch - scoreboard.start_epoch,
 				scoreboard.requests,
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 				scoreboard.lq,
 				scoreboard.lq_max,
 				scoreboard.lq_len,
@@ -391,11 +391,11 @@ int fpm_status_handle_request(void) /* {{{ */
 			zend_string *tmp_query_string;
 			char *query_string;
 			struct timeval duration, now;
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 			float cpu;
 #endif
 
-			fpm_clock_get(&now);
+			fpmi_clock_get(&now);
 
 			if (full_pre) {
 				PUTS(full_pre);
@@ -427,16 +427,16 @@ int fpm_status_handle_request(void) /* {{{ */
 					}
 				}
 
-#ifdef HAVE_FPM_LQ
+#ifdef HAVE_FPMI_LQ
 				/* prevent NaN */
 				if (proc.cpu_duration.tv_sec == 0 && proc.cpu_duration.tv_usec == 0) {
 					cpu = 0.;
 				} else {
-					cpu = (proc.last_request_cpu.tms_utime + proc.last_request_cpu.tms_stime + proc.last_request_cpu.tms_cutime + proc.last_request_cpu.tms_cstime) / fpm_scoreboard_get_tick() / (proc.cpu_duration.tv_sec + proc.cpu_duration.tv_usec / 1000000.) * 100.;
+					cpu = (proc.last_request_cpu.tms_utime + proc.last_request_cpu.tms_stime + proc.last_request_cpu.tms_cutime + proc.last_request_cpu.tms_cstime) / fpmi_scoreboard_get_tick() / (proc.cpu_duration.tv_sec + proc.cpu_duration.tv_usec / 1000000.) * 100.;
 				}
 #endif
 
-				if (proc.request_stage == FPM_REQUEST_ACCEPTING) {
+				if (proc.request_stage == FPMI_REQUEST_ACCEPTING) {
 					duration = proc.duration;
 				} else {
 					timersub(&now, &proc.accepted, &duration);
@@ -444,7 +444,7 @@ int fpm_status_handle_request(void) /* {{{ */
 				strftime(time_buffer, sizeof(time_buffer) - 1, time_format, localtime(&proc.start_epoch));
 				spprintf(&buffer, 0, full_syntax,
 					proc.pid,
-					fpm_request_get_stage_name(proc.request_stage),
+					fpmi_request_get_stage_name(proc.request_stage),
 					time_buffer,
 					now_epoch - proc.start_epoch,
 					proc.requests,
@@ -456,10 +456,10 @@ int fpm_status_handle_request(void) /* {{{ */
 					proc.content_length,
 					proc.auth_user[0] != '\0' ? proc.auth_user : "-",
 					proc.script_filename[0] != '\0' ? proc.script_filename : "-",
-#ifdef HAVE_FPM_LQ
-					proc.request_stage == FPM_REQUEST_ACCEPTING ? cpu : 0.,
+#ifdef HAVE_FPMI_LQ
+					proc.request_stage == FPMI_REQUEST_ACCEPTING ? cpu : 0.,
 #endif
-					proc.request_stage == FPM_REQUEST_ACCEPTING ? proc.memory : 0);
+					proc.request_stage == FPMI_REQUEST_ACCEPTING ? proc.memory : 0);
 				PUTS(buffer);
 				efree(buffer);
 

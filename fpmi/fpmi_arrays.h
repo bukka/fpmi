@@ -1,26 +1,26 @@
 
-	/* $Id: fpm_arrays.h,v 1.2 2008/05/24 17:38:47 anight Exp $ */
+	/* $Id: fpmi_arrays.h,v 1.2 2008/05/24 17:38:47 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#ifndef FPM_ARRAYS_H
-#define FPM_ARRAYS_H 1
+#ifndef FPMI_ARRAYS_H
+#define FPMI_ARRAYS_H 1
 
 #include <stdlib.h>
 #include <string.h>
 
-struct fpm_array_s {
+struct fpmi_array_s {
 	void *data;
 	size_t sz;
 	size_t used;
 	size_t allocated;
 };
 
-static inline struct fpm_array_s *fpm_array_init(struct fpm_array_s *a, unsigned int sz, unsigned int initial_num) /* {{{ */
+static inline struct fpmi_array_s *fpmi_array_init(struct fpmi_array_s *a, unsigned int sz, unsigned int initial_num) /* {{{ */
 {
 	void *allocated = 0;
 
 	if (!a) {
-		a = malloc(sizeof(struct fpm_array_s));
+		a = malloc(sizeof(struct fpmi_array_s));
 
 		if (!a) {
 			return 0;
@@ -45,7 +45,7 @@ static inline struct fpm_array_s *fpm_array_init(struct fpm_array_s *a, unsigned
 }
 /* }}} */
 
-static inline void *fpm_array_item(struct fpm_array_s *a, unsigned int n) /* {{{ */
+static inline void *fpmi_array_item(struct fpmi_array_s *a, unsigned int n) /* {{{ */
 {
 	char *ret;
 
@@ -55,19 +55,19 @@ static inline void *fpm_array_item(struct fpm_array_s *a, unsigned int n) /* {{{
 }
 /* }}} */
 
-static inline void *fpm_array_item_last(struct fpm_array_s *a) /* {{{ */
+static inline void *fpmi_array_item_last(struct fpmi_array_s *a) /* {{{ */
 {
-	return fpm_array_item(a, a->used - 1);
+	return fpmi_array_item(a, a->used - 1);
 }
 /* }}} */
 
-static inline int fpm_array_item_remove(struct fpm_array_s *a, unsigned int n) /* {{{ */
+static inline int fpmi_array_item_remove(struct fpmi_array_s *a, unsigned int n) /* {{{ */
 {
 	int ret = -1;
 
 	if (n < a->used - 1) {
-		void *last = fpm_array_item(a, a->used - 1);
-		void *to_remove = fpm_array_item(a, n);
+		void *last = fpmi_array_item(a, a->used - 1);
+		void *to_remove = fpmi_array_item(a, n);
 
 		memcpy(to_remove, last, a->sz);
 
@@ -80,7 +80,7 @@ static inline int fpm_array_item_remove(struct fpm_array_s *a, unsigned int n) /
 }
 /* }}} */
 
-static inline void *fpm_array_push(struct fpm_array_s *a) /* {{{ */
+static inline void *fpmi_array_push(struct fpmi_array_s *a) /* {{{ */
 {
 	void *ret;
 
@@ -96,7 +96,7 @@ static inline void *fpm_array_push(struct fpm_array_s *a) /* {{{ */
 		a->allocated = new_allocated;
 	}
 
-	ret = fpm_array_item(a, a->used);
+	ret = fpmi_array_item(a, a->used);
 
 	++a->used;
 
@@ -104,7 +104,7 @@ static inline void *fpm_array_push(struct fpm_array_s *a) /* {{{ */
 }
 /* }}} */
 
-static inline void fpm_array_free(struct fpm_array_s *a) /* {{{ */
+static inline void fpmi_array_free(struct fpmi_array_s *a) /* {{{ */
 {
 	free(a->data);
 	a->data = 0;

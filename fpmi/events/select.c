@@ -18,9 +18,9 @@
 
 /* $Id$ */
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
-#include "../fpm.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
+#include "../fpmi.h"
 #include "../zlog.h"
 
 #if HAVE_SELECT
@@ -35,19 +35,19 @@
 
 #include <errno.h>
 
-static int fpm_event_select_init(int max);
-static int fpm_event_select_wait(struct fpm_event_queue_s *queue, unsigned long int timeout);
-static int fpm_event_select_add(struct fpm_event_s *ev);
-static int fpm_event_select_remove(struct fpm_event_s *ev);
+static int fpmi_event_select_init(int max);
+static int fpmi_event_select_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout);
+static int fpmi_event_select_add(struct fpmi_event_s *ev);
+static int fpmi_event_select_remove(struct fpmi_event_s *ev);
 
-static struct fpm_event_module_s select_module = {
+static struct fpmi_event_module_s select_module = {
 	.name = "select",
 	.support_edge_trigger = 0,
-	.init = fpm_event_select_init,
+	.init = fpmi_event_select_init,
 	.clean = NULL,
-	.wait = fpm_event_select_wait,
-	.add = fpm_event_select_add,
-	.remove = fpm_event_select_remove,
+	.wait = fpmi_event_select_wait,
+	.add = fpmi_event_select_add,
+	.remove = fpmi_event_select_remove,
 };
 
 static fd_set fds;
@@ -57,7 +57,7 @@ static fd_set fds;
 /*
  * return the module configuration
  */
-struct fpm_event_module_s *fpm_event_select_module() /* {{{ */
+struct fpmi_event_module_s *fpmi_event_select_module() /* {{{ */
 {
 #if HAVE_SELECT
 	return &select_module;
@@ -72,7 +72,7 @@ struct fpm_event_module_s *fpm_event_select_module() /* {{{ */
 /*
  * Init the module
  */
-static int fpm_event_select_init(int max) /* {{{ */
+static int fpmi_event_select_init(int max) /* {{{ */
 {
 	FD_ZERO(&fds);
 	return 0;
@@ -83,10 +83,10 @@ static int fpm_event_select_init(int max) /* {{{ */
 /*
  * wait for events or timeout
  */
-static int fpm_event_select_wait(struct fpm_event_queue_s *queue, unsigned long int timeout) /* {{{ */
+static int fpmi_event_select_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout) /* {{{ */
 {
 	int ret;
-	struct fpm_event_queue_s *q;
+	struct fpmi_event_queue_s *q;
 	fd_set current_fds;
 	struct timeval t;
 
@@ -120,10 +120,10 @@ static int fpm_event_select_wait(struct fpm_event_queue_s *queue, unsigned long 
 				if (FD_ISSET(q->ev->fd, &current_fds)) {
 
 					/* fire the event */
-					fpm_event_fire(q->ev);
+					fpmi_event_fire(q->ev);
 
 					/* sanity check */
-					if (fpm_globals.parent_pid != getpid()) {
+					if (fpmi_globals.parent_pid != getpid()) {
 						return -2;
 					}
 				}
@@ -139,7 +139,7 @@ static int fpm_event_select_wait(struct fpm_event_queue_s *queue, unsigned long 
 /*
  * Add a FD to the fd set
  */
-static int fpm_event_select_add(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_select_add(struct fpmi_event_s *ev) /* {{{ */
 {
 	/* check size limitation */
 	if (ev->fd >= FD_SETSIZE) {
@@ -160,7 +160,7 @@ static int fpm_event_select_add(struct fpm_event_s *ev) /* {{{ */
 /*
  * Remove a FD from the fd set
  */
-static int fpm_event_select_remove(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_select_remove(struct fpmi_event_s *ev) /* {{{ */
 {
 	/* remove the fd if it's in */
 	if (FD_ISSET(ev->fd, &fds)) {

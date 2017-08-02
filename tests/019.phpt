@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test global prefix
+FPMI: Test global prefix
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -7,10 +7,10 @@ FPM: Test global prefix
 
 include "include.inc";
 
-$logfile = 'php-fpm.log.tmp';
-$accfile = 'php-fpm.acc.tmp';
-$slwfile = 'php-fpm.slw.tmp';
-$pidfile = 'php-fpm.pid.tmp';
+$logfile = 'php-fpmi.log.tmp';
+$accfile = 'php-fpmi.acc.tmp';
+$slwfile = 'php-fpmi.slw.tmp';
+$pidfile = 'php-fpmi.pid.tmp';
 $port = 9000+PHP_INT_SIZE;
 
 $cfg = <<<EOT
@@ -31,9 +31,9 @@ pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 EOT;
 
-$fpm = run_fpm($cfg, $tail, '--prefix '.__DIR__);
-if (is_resource($fpm)) {
-    fpm_display_log($tail, 2);
+$fpmi = run_fpmi($cfg, $tail, '--prefix '.__DIR__);
+if (is_resource($fpmi)) {
+    fpmi_display_log($tail, 2);
     try {
 		run_request('127.0.0.1', $port);
 		echo "Ping ok\n";
@@ -45,33 +45,33 @@ if (is_resource($fpm)) {
 	printf("File %s %s\n", $slwfile, (file_exists(__DIR__.'/'.$slwfile) ? "exists" : "missing"));
 	printf("File %s %s\n", $pidfile, (file_exists(__DIR__.'/'.$pidfile) ? "exists" : "missing"));
 
-	proc_terminate($fpm);
-    fpm_display_log($tail, -1);
+	proc_terminate($fpmi);
+    fpmi_display_log($tail, -1);
     fclose($tail);
-    proc_close($fpm);
+    proc_close($fpmi);
 	printf("File %s %s\n", $pidfile, (file_exists(__DIR__.'/'.$pidfile) ? "still exists" : "removed"));
 	readfile(__DIR__.'/'.$accfile);
 }
 
 ?>
 --EXPECTF--
-[%s] NOTICE: fpm is running, pid %d
+[%s] NOTICE: fpmi is running, pid %d
 [%s] NOTICE: ready to handle connections
 Ping ok
-File php-fpm.log.tmp exists
-File php-fpm.acc.tmp exists
-File php-fpm.slw.tmp exists
-File php-fpm.pid.tmp exists
+File php-fpmi.log.tmp exists
+File php-fpmi.acc.tmp exists
+File php-fpmi.slw.tmp exists
+File php-fpmi.pid.tmp exists
 [%s] NOTICE: Terminating ...
 [%s] NOTICE: exiting, bye-bye!
-File php-fpm.pid.tmp removed
+File php-fpmi.pid.tmp removed
 127.0.0.1 -  %s "GET /ping" 200
 --CLEAN--
 <?php
-	$logfile = __DIR__.'/php-fpm.log.tmp';
-	$accfile = __DIR__.'/php-fpm.acc.tmp';
-	$slwfile = __DIR__.'/php-fpm.slw.tmp';
-	$pidfile = __DIR__.'/php-fpm.pid.tmp';
+	$logfile = __DIR__.'/php-fpmi.log.tmp';
+	$accfile = __DIR__.'/php-fpmi.acc.tmp';
+	$slwfile = __DIR__.'/php-fpmi.slw.tmp';
+	$pidfile = __DIR__.'/php-fpmi.pid.tmp';
     @unlink($logfile);
     @unlink($accfile);
     @unlink($slwfile);

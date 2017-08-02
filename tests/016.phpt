@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test splited configuration and load order #68391
+FPMI: Test splited configuration and load order #68391
 --SKIPIF--
 <?php
 include "skipif.inc";
@@ -14,7 +14,7 @@ pm.max_children = 2
 pm.process_idle_timeout = 10
 EOT;
 
-if (test_fpm_conf($cfg, $msg) == false) {
+if (test_fpmi_conf($cfg, $msg) == false) {
 	die("skip " .  $msg);
 }
 ?>
@@ -23,7 +23,7 @@ if (test_fpm_conf($cfg, $msg) == false) {
 
 include "include.inc";
 
-$logfile = __DIR__.'/php-fpm.log.tmp';
+$logfile = __DIR__.'/php-fpmi.log.tmp';
 $logdir  = __DIR__.'/conf.d';
 $port = 9000+PHP_INT_SIZE;
 
@@ -53,9 +53,9 @@ EOT;
 }
 
 // Test
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
-    fpm_display_log($tail, count($names)+2);
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
+    fpmi_display_log($tail, count($names)+2);
 	$i=$port;
 	foreach($names as $name) {
 		try {
@@ -65,21 +65,21 @@ if (is_resource($fpm)) {
 			echo "Error 1\n";
 		}
 	}
-	proc_terminate($fpm);
-	fpm_display_log($tail, -1);
+	proc_terminate($fpmi);
+	fpmi_display_log($tail, -1);
 	fclose($tail);
-	proc_close($fpm);
+	proc_close($fpmi);
 }
 
 ?>
 Done
 --EXPECTF--
-[%s] NOTICE: [pool aaaa] 'user' directive is ignored when FPM is not running as root
-[%s] NOTICE: [pool bbbb] 'user' directive is ignored when FPM is not running as root
-[%s] NOTICE: [pool cccc] 'user' directive is ignored when FPM is not running as root
-[%s] NOTICE: [pool dddd] 'user' directive is ignored when FPM is not running as root
-[%s] NOTICE: [pool eeee] 'user' directive is ignored when FPM is not running as root
-[%s] NOTICE: fpm is running, pid %d
+[%s] NOTICE: [pool aaaa] 'user' directive is ignored when FPMI is not running as root
+[%s] NOTICE: [pool bbbb] 'user' directive is ignored when FPMI is not running as root
+[%s] NOTICE: [pool cccc] 'user' directive is ignored when FPMI is not running as root
+[%s] NOTICE: [pool dddd] 'user' directive is ignored when FPMI is not running as root
+[%s] NOTICE: [pool eeee] 'user' directive is ignored when FPMI is not running as root
+[%s] NOTICE: fpmi is running, pid %d
 [%s] NOTICE: ready to handle connections
 OK cccc
 OK aaaa
@@ -91,7 +91,7 @@ OK bbbb
 Done
 --CLEAN--
 <?php
-	$logfile = __DIR__.'/php-fpm.log.tmp';
+	$logfile = __DIR__.'/php-fpmi.log.tmp';
 	$logdir  = __DIR__.'/conf.d';
 	@unlink($logfile);
 	foreach(glob("$logdir/*.conf") as $name) {

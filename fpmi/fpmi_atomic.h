@@ -1,9 +1,9 @@
 
-	/* $Id: fpm_atomic.h,v 1.3 2008/09/18 23:34:11 anight Exp $ */
+	/* $Id: fpmi_atomic.h,v 1.3 2008/09/18 23:34:11 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#ifndef FPM_ATOMIC_H
-#define FPM_ATOMIC_H 1
+#ifndef FPMI_ATOMIC_H
+#define FPMI_ATOMIC_H 1
 
 #if HAVE_INTTYPES_H
 # include <inttypes.h>
@@ -143,7 +143,7 @@ static inline atomic_uint_t atomic_cmp_set(atomic_t *lock, atomic_uint_t old, at
 
 #endif
 
-static inline int fpm_spinlock(atomic_t *lock, int try_once) /* {{{ */
+static inline int fpmi_spinlock(atomic_t *lock, int try_once) /* {{{ */
 {
 	if (try_once) {
 		return atomic_cmp_set(lock, 0, 1) ? 1 : 0;
@@ -162,7 +162,7 @@ static inline int fpm_spinlock(atomic_t *lock, int try_once) /* {{{ */
 }
 /* }}} */
 
-#define fpm_unlock(lock) lock = 0
+#define fpmi_unlock(lock) lock = 0
 
 #endif
 

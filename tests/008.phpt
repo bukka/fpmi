@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test multi pool (dynamic + ondemand + static) (bug #68423)
+FPMI: Test multi pool (dynamic + ondemand + static) (bug #68423)
 --SKIPIF--
 <?php
 include "skipif.inc"; 
@@ -14,7 +14,7 @@ pm.max_children = 2
 pm.process_idle_timeout = 10
 EOT;
 
-if (test_fpm_conf($cfg, $msg) == false) {
+if (test_fpmi_conf($cfg, $msg) == false) {
 	die("skip " .  $msg);
 }
 ?>
@@ -23,7 +23,7 @@ if (test_fpm_conf($cfg, $msg) == false) {
 
 include "include.inc";
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
 $port1 = 9000+PHP_INT_SIZE;
 $port2 = 9001+PHP_INT_SIZE;
 $port3 = 9002+PHP_INT_SIZE;
@@ -55,9 +55,9 @@ pm = static
 pm.max_children = 2
 EOT;
 
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
-    fpm_display_log($tail, 2);
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
+    fpmi_display_log($tail, 2);
     try {
 		var_dump(strpos(run_request('127.0.0.1', $port1), 'pong-dynamic'));
 		echo "Dynamic ok\n";
@@ -77,15 +77,15 @@ if (is_resource($fpm)) {
 		echo "Static error\n";
 	}
 
-	proc_terminate($fpm);
+	proc_terminate($fpmi);
     stream_get_contents($tail);
     fclose($tail);
-    proc_close($fpm);
+    proc_close($fpmi);
 }
 
 ?>
 --EXPECTF--
-[%d-%s-%d %d:%d:%d] NOTICE: fpm is running, pid %d
+[%d-%s-%d %d:%d:%d] NOTICE: fpmi is running, pid %d
 [%d-%s-%d %d:%d:%d] NOTICE: ready to handle connections
 int(%d)
 Dynamic ok
@@ -95,6 +95,6 @@ int(%d)
 Static ok
 --CLEAN--
 <?php
-    $logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+    $logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
     @unlink($logfile);
 ?>

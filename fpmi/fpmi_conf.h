@@ -1,16 +1,16 @@
 
-	/* $Id: fpm_conf.h,v 1.12.2.2 2008/12/13 03:46:49 anight Exp $ */
+	/* $Id: fpmi_conf.h,v 1.12.2.2 2008/12/13 03:46:49 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#ifndef FPM_CONF_H
-#define FPM_CONF_H 1
+#ifndef FPMI_CONF_H
+#define FPMI_CONF_H 1
 
 #include <stdint.h>
 #include "php.h"
 
 #define PM2STR(a) (a == PM_STYLE_STATIC ? "static" : (a == PM_STYLE_DYNAMIC ? "dynamic" : "ondemand"))
 
-#define FPM_CONF_MAX_PONG_LENGTH 64
+#define FPMI_CONF_MAX_PONG_LENGTH 64
 
 struct key_value_s;
 
@@ -21,9 +21,9 @@ struct key_value_s {
 };
 
 /*
- * Please keep the same order as in fpm_conf.c and in php-fpm.conf.in
+ * Please keep the same order as in fpmi_conf.c and in php-fpmi.conf.in
  */
-struct fpm_global_config_s {
+struct fpmi_global_config_s {
 	char *pid_file;
 	char *error_log;
 #ifdef HAVE_SYSLOG_H
@@ -46,12 +46,12 @@ struct fpm_global_config_s {
 #endif
 };
 
-extern struct fpm_global_config_s fpm_global_config;
+extern struct fpmi_global_config_s fpmi_global_config;
 
 /*
- * Please keep the same order as in fpm_conf.c and in php-fpm.conf.in
+ * Please keep the same order as in fpmi_conf.c and in php-fpmi.conf.in
  */
-struct fpm_worker_pool_config_s {
+struct fpmi_worker_pool_config_s {
 	char *name;
 	char *prefix;
 	char *user;
@@ -93,7 +93,7 @@ struct fpm_worker_pool_config_s {
 #ifdef HAVE_APPARMOR
 	char *apparmor_hat;
 #endif
-#ifdef HAVE_FPM_ACL
+#ifdef HAVE_FPMI_ACL
 	/* Using Posix ACL */
 	char *listen_acl_users;
 	char *listen_acl_groups;
@@ -112,10 +112,10 @@ enum {
 	PM_STYLE_ONDEMAND = 3
 };
 
-int fpm_conf_init_main(int test_conf, int force_daemon);
-int fpm_worker_pool_config_free(struct fpm_worker_pool_config_s *wpc);
-int fpm_conf_write_pid();
-int fpm_conf_unlink_pid();
+int fpmi_conf_init_main(int test_conf, int force_daemon);
+int fpmi_worker_pool_config_free(struct fpmi_worker_pool_config_s *wpc);
+int fpmi_conf_write_pid();
+int fpmi_conf_unlink_pid();
 
 #endif
 

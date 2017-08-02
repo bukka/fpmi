@@ -1,9 +1,9 @@
 
-	/* $Id: fpm.h,v 1.13 2008/05/24 17:38:47 anight Exp $ */
+	/* $Id: fpmi.h,v 1.13 2008/05/24 17:38:47 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#ifndef FPM_H
-#define FPM_H 1
+#ifndef FPMI_H
+#define FPMI_H 1
 
 #include <unistd.h>
 
@@ -12,34 +12,34 @@
 #endif
 
 #ifdef EX_OK
-#define FPM_EXIT_OK EX_OK
+#define FPMI_EXIT_OK EX_OK
 #else
-#define FPM_EXIT_OK 0
+#define FPMI_EXIT_OK 0
 #endif
 
 #ifdef EX_USAGE
-#define FPM_EXIT_USAGE EX_USAGE
+#define FPMI_EXIT_USAGE EX_USAGE
 #else
-#define FPM_EXIT_USAGE 64
+#define FPMI_EXIT_USAGE 64
 #endif
 
 #ifdef EX_SOFTWARE
-#define FPM_EXIT_SOFTWARE EX_SOFTWARE
+#define FPMI_EXIT_SOFTWARE EX_SOFTWARE
 #else
-#define FPM_EXIT_SOFTWARE 70
+#define FPMI_EXIT_SOFTWARE 70
 #endif
 
 #ifdef EX_CONFIG
-#define FPM_EXIT_CONFIG EX_CONFIG
+#define FPMI_EXIT_CONFIG EX_CONFIG
 #else
-#define FPM_EXIT_CONFIG 78
+#define FPMI_EXIT_CONFIG 78
 #endif
 
 
-int fpm_run(int *max_requests);
-int fpm_init(int argc, char **argv, char *config, char *prefix, char *pid, int test_conf, int run_as_root, int force_daemon, int force_stderr);
+int fpmi_run(int *max_requests);
+int fpmi_init(int argc, char **argv, char *config, char *prefix, char *pid, int test_conf, int run_as_root, int force_daemon, int force_stderr);
 
-struct fpm_globals_s {
+struct fpmi_globals_s {
 	pid_t parent_pid;
 	int argc;
 	char **argv;
@@ -59,6 +59,6 @@ struct fpm_globals_s {
 	int send_config_pipe[2];
 };
 
-extern struct fpm_globals_s fpm_globals;
+extern struct fpmi_globals_s fpmi_globals;
 
 #endif

@@ -1,17 +1,17 @@
 
-	/* $Id: fpm_trace_mach.c,v 1.4 2008/08/26 15:09:15 anight Exp $ */
+	/* $Id: fpmi_trace_mach.c,v 1.4 2008/08/26 15:09:15 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <mach/mach.h>
 #include <mach/mach_vm.h>
 
 #include <unistd.h>
 
-#include "fpm_trace.h"
-#include "fpm_process_ctl.h"
-#include "fpm_unix.h"
+#include "fpmi_trace.h"
+#include "fpmi_process_ctl.h"
+#include "fpmi_unix.h"
 #include "zlog.h"
 
 
@@ -20,7 +20,7 @@ static vm_offset_t target_page_base;
 static vm_offset_t local_page;
 static mach_msg_type_number_t local_size;
 
-static void fpm_mach_vm_deallocate() /* {{{ */
+static void fpmi_mach_vm_deallocate() /* {{{ */
 {
 	if (local_page) {
 		mach_vm_deallocate(mach_task_self(), local_page, local_size);
@@ -31,11 +31,11 @@ static void fpm_mach_vm_deallocate() /* {{{ */
 }
 /* }}} */
 
-static int fpm_mach_vm_read_page(vm_offset_t page) /* {{{ */
+static int fpmi_mach_vm_read_page(vm_offset_t page) /* {{{ */
 {
 	kern_return_t kr;
 
-	kr = mach_vm_read(target, page, fpm_pagesize, &local_page, &local_size);
+	kr = mach_vm_read(target, page, fpmi_pagesize, &local_page, &local_size);
 	if (kr != KERN_SUCCESS) {
 		zlog(ZLOG_ERROR, "failed to read vm page: mach_vm_read(): %s (%d)", mach_error_string(kr), kr);
 		return -1;
@@ -44,9 +44,9 @@ static int fpm_mach_vm_read_page(vm_offset_t page) /* {{{ */
 }
 /* }}} */
 
-int fpm_trace_signal(pid_t pid) /* {{{ */
+int fpmi_trace_signal(pid_t pid) /* {{{ */
 {
-	if (0 > fpm_pctl_kill(pid, FPM_PCTL_STOP)) {
+	if (0 > fpmi_pctl_kill(pid, FPMI_PCTL_STOP)) {
 		zlog(ZLOG_SYSERROR, "failed to send SIGSTOP to %d", pid);
 		return -1;
 	}
@@ -54,7 +54,7 @@ int fpm_trace_signal(pid_t pid) /* {{{ */
 }
 /* }}} */
 
-int fpm_trace_ready(pid_t pid) /* {{{ */
+int fpmi_trace_ready(pid_t pid) /* {{{ */
 {
 	kern_return_t kr;
 
@@ -72,22 +72,22 @@ int fpm_trace_ready(pid_t pid) /* {{{ */
 }
 /* }}} */
 
-int fpm_trace_close(pid_t pid) /* {{{ */
+int fpmi_trace_close(pid_t pid) /* {{{ */
 {
-	fpm_mach_vm_deallocate();
+	fpmi_mach_vm_deallocate();
 	target = 0;
 	return 0;
 }
 /* }}} */
 
-int fpm_trace_get_long(long addr, long *data) /* {{{ */
+int fpmi_trace_get_long(long addr, long *data) /* {{{ */
 {
-	size_t offset = ((uintptr_t) (addr) % fpm_pagesize);
+	size_t offset = ((uintptr_t) (addr) % fpmi_pagesize);
 	vm_offset_t base = (uintptr_t) (addr) - offset;
 
 	if (base != target_page_base) {
-		fpm_mach_vm_deallocate();
-		if (0 > fpm_mach_vm_read_page(base)) {
+		fpmi_mach_vm_deallocate();
+		if (0 > fpmi_mach_vm_read_page(base)) {
 			return -1;
 		}
 	}

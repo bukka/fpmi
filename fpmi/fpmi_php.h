@@ -1,17 +1,17 @@
 
-	/* $Id: fpm_php.h,v 1.10.2.1 2008/11/15 00:57:24 anight Exp $ */
+	/* $Id: fpmi_php.h,v 1.10.2.1 2008/11/15 00:57:24 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#ifndef FPM_PHP_H
-#define FPM_PHP_H 1
+#ifndef FPMI_PHP_H
+#define FPMI_PHP_H 1
 
 #include <TSRM.h>
 
 #include "php.h"
 #include "build-defs.h" /* for PHP_ defines */
-#include "fpm/fpm_conf.h"
+#include "fpmi/fpmi_conf.h"
 
-#define FPM_PHP_INI_TO_EXPAND \
+#define FPMI_PHP_INI_TO_EXPAND \
 	{ \
 		"error_log", \
 		"extension_dir", \
@@ -31,20 +31,20 @@
 		NULL \
 	}
 
-struct fpm_worker_pool_s;
+struct fpmi_worker_pool_s;
 
-int fpm_php_init_child(struct fpm_worker_pool_s *wp);
-char *fpm_php_script_filename(void);
-char *fpm_php_request_uri(void);
-char *fpm_php_request_method(void);
-char *fpm_php_query_string(void);
-char *fpm_php_auth_user(void);
-size_t fpm_php_content_length(void);
-void fpm_php_soft_quit();
-int fpm_php_init_main();
-int fpm_php_apply_defines_ex(struct key_value_s *kv, int mode);
-int fpm_php_limit_extensions(char *path);
-char* fpm_php_get_string_from_table(zend_string *table, char *key);
+int fpmi_php_init_child(struct fpmi_worker_pool_s *wp);
+char *fpmi_php_script_filename(void);
+char *fpmi_php_request_uri(void);
+char *fpmi_php_request_method(void);
+char *fpmi_php_query_string(void);
+char *fpmi_php_auth_user(void);
+size_t fpmi_php_content_length(void);
+void fpmi_php_soft_quit();
+int fpmi_php_init_main();
+int fpmi_php_apply_defines_ex(struct key_value_s *kv, int mode);
+int fpmi_php_limit_extensions(char *path);
+char* fpmi_php_get_string_from_table(zend_string *table, char *key);
 
 #endif
 

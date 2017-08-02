@@ -1,8 +1,8 @@
 
-	/* $Id: fpm_unix.c,v 1.25.2.1 2008/12/13 03:18:23 anight Exp $ */
+	/* $Id: fpmi_unix.c,v 1.25.2.1 2008/12/13 03:18:23 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <string.h>
 #include <sys/time.h>
@@ -25,21 +25,21 @@
 #include <sys/acl.h>
 #endif
 
-#include "fpm.h"
-#include "fpm_conf.h"
-#include "fpm_cleanup.h"
-#include "fpm_clock.h"
-#include "fpm_stdio.h"
-#include "fpm_unix.h"
-#include "fpm_signals.h"
+#include "fpmi.h"
+#include "fpmi_conf.h"
+#include "fpmi_cleanup.h"
+#include "fpmi_clock.h"
+#include "fpmi_stdio.h"
+#include "fpmi_unix.h"
+#include "fpmi_signals.h"
 #include "zlog.h"
 
-size_t fpm_pagesize;
+size_t fpmi_pagesize;
 
-int fpm_unix_resolve_socket_premissions(struct fpm_worker_pool_s *wp) /* {{{ */
+int fpmi_unix_resolve_socket_premissions(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
-	struct fpm_worker_pool_config_s *c = wp->config;
-#ifdef HAVE_FPM_ACL
+	struct fpmi_worker_pool_config_s *c = wp->config;
+#ifdef HAVE_FPMI_ACL
 	int n;
 
 	/* uninitialized */
@@ -57,7 +57,7 @@ int fpm_unix_resolve_socket_premissions(struct fpm_worker_pool_s *wp) /* {{{ */
 		wp->socket_mode = strtoul(c->listen_mode, 0, 8);
 	}
 
-#ifdef HAVE_FPM_ACL
+#ifdef HAVE_FPMI_ACL
 	/* count the users and groups configured */
 	n = 0;
 	if (c->listen_acl_users && *c->listen_acl_users) {
@@ -192,9 +192,9 @@ int fpm_unix_resolve_socket_premissions(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-int fpm_unix_set_socket_premissions(struct fpm_worker_pool_s *wp, const char *path) /* {{{ */
+int fpmi_unix_set_socket_premissions(struct fpmi_worker_pool_s *wp, const char *path) /* {{{ */
 {
-#ifdef HAVE_FPM_ACL
+#ifdef HAVE_FPMI_ACL
 	if (wp->socket_acl) {
 		acl_t aclfile, aclconf;
 		acl_entry_t entryfile, entryconf;
@@ -243,9 +243,9 @@ int fpm_unix_set_socket_premissions(struct fpm_worker_pool_s *wp, const char *pa
 }
 /* }}} */
 
-int fpm_unix_free_socket_premissions(struct fpm_worker_pool_s *wp) /* {{{ */
+int fpmi_unix_free_socket_premissions(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
-#ifdef HAVE_FPM_ACL
+#ifdef HAVE_FPMI_ACL
 	if (wp->socket_acl) {
 		return acl_free(wp->socket_acl);
 	}
@@ -254,7 +254,7 @@ int fpm_unix_free_socket_premissions(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-static int fpm_unix_conf_wp(struct fpm_worker_pool_s *wp) /* {{{ */
+static int fpmi_unix_conf_wp(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	struct passwd *pwd;
 	int is_root = !geteuid();
@@ -295,7 +295,7 @@ static int fpm_unix_conf_wp(struct fpm_worker_pool_s *wp) /* {{{ */
 			}
 		}
 
-		if (!fpm_globals.run_as_root) {
+		if (!fpmi_globals.run_as_root) {
 			if (wp->set_uid == 0 || wp->set_gid == 0) {
 				zlog(ZLOG_ERROR, "[pool %s] please specify user and group other than root", wp->config->name);
 				return -1;
@@ -303,16 +303,16 @@ static int fpm_unix_conf_wp(struct fpm_worker_pool_s *wp) /* {{{ */
 		}
 	} else { /* not root */
 		if (wp->config->user && *wp->config->user) {
-			zlog(ZLOG_NOTICE, "[pool %s] 'user' directive is ignored when FPM is not running as root", wp->config->name);
+			zlog(ZLOG_NOTICE, "[pool %s] 'user' directive is ignored when FPMI is not running as root", wp->config->name);
 		}
 		if (wp->config->group && *wp->config->group) {
-			zlog(ZLOG_NOTICE, "[pool %s] 'group' directive is ignored when FPM is not running as root", wp->config->name);
+			zlog(ZLOG_NOTICE, "[pool %s] 'group' directive is ignored when FPMI is not running as root", wp->config->name);
 		}
 		if (wp->config->chroot && *wp->config->chroot) {
-			zlog(ZLOG_NOTICE, "[pool %s] 'chroot' directive is ignored when FPM is not running as root", wp->config->name);
+			zlog(ZLOG_NOTICE, "[pool %s] 'chroot' directive is ignored when FPMI is not running as root", wp->config->name);
 		}
 		if (wp->config->process_priority != 64) {
-			zlog(ZLOG_NOTICE, "[pool %s] 'process.priority' directive is ignored when FPM is not running as root", wp->config->name);
+			zlog(ZLOG_NOTICE, "[pool %s] 'process.priority' directive is ignored when FPMI is not running as root", wp->config->name);
 		}
 
 		/* set up HOME and USER anyway */
@@ -326,7 +326,7 @@ static int fpm_unix_conf_wp(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-int fpm_unix_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
+int fpmi_unix_init_child(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	int is_root = !geteuid();
 	int made_chroot = 0;
@@ -403,7 +403,7 @@ int fpm_unix_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 	}
 #endif
 
-	if (0 > fpm_clock_init()) {
+	if (0 > fpmi_clock_init()) {
 		return -1;
 	}
 
@@ -441,35 +441,35 @@ int fpm_unix_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-int fpm_unix_init_main() /* {{{ */
+int fpmi_unix_init_main() /* {{{ */
 {
-	struct fpm_worker_pool_s *wp;
+	struct fpmi_worker_pool_s *wp;
 	int is_root = !geteuid();
 
-	if (fpm_global_config.rlimit_files) {
+	if (fpmi_global_config.rlimit_files) {
 		struct rlimit r;
 
-		r.rlim_max = r.rlim_cur = (rlim_t) fpm_global_config.rlimit_files;
+		r.rlim_max = r.rlim_cur = (rlim_t) fpmi_global_config.rlimit_files;
 
 		if (0 > setrlimit(RLIMIT_NOFILE, &r)) {
-			zlog(ZLOG_SYSERROR, "failed to set rlimit_core for this pool. Please check your system limits or decrease rlimit_files. setrlimit(RLIMIT_NOFILE, %d)", fpm_global_config.rlimit_files);
+			zlog(ZLOG_SYSERROR, "failed to set rlimit_core for this pool. Please check your system limits or decrease rlimit_files. setrlimit(RLIMIT_NOFILE, %d)", fpmi_global_config.rlimit_files);
 			return -1;
 		}
 	}
 
-	if (fpm_global_config.rlimit_core) {
+	if (fpmi_global_config.rlimit_core) {
 		struct rlimit r;
 
-		r.rlim_max = r.rlim_cur = fpm_global_config.rlimit_core == -1 ? (rlim_t) RLIM_INFINITY : (rlim_t) fpm_global_config.rlimit_core;
+		r.rlim_max = r.rlim_cur = fpmi_global_config.rlimit_core == -1 ? (rlim_t) RLIM_INFINITY : (rlim_t) fpmi_global_config.rlimit_core;
 
 		if (0 > setrlimit(RLIMIT_CORE, &r)) {
-			zlog(ZLOG_SYSERROR, "failed to set rlimit_core for this pool. Please check your system limits or decrease rlimit_core. setrlimit(RLIMIT_CORE, %d)", fpm_global_config.rlimit_core);
+			zlog(ZLOG_SYSERROR, "failed to set rlimit_core for this pool. Please check your system limits or decrease rlimit_core. setrlimit(RLIMIT_CORE, %d)", fpmi_global_config.rlimit_core);
 			return -1;
 		}
 	}
 
-	fpm_pagesize = getpagesize();
-	if (fpm_global_config.daemonize) {
+	fpmi_pagesize = getpagesize();
+	if (fpmi_global_config.daemonize) {
 		/*
 		 * If daemonize, the calling process will die soon
 		 * and the master process continues to initialize itself.
@@ -486,7 +486,7 @@ int fpm_unix_init_main() /* {{{ */
 		fd_set rfds;
 		int ret;
 
-		if (pipe(fpm_globals.send_config_pipe) == -1) {
+		if (pipe(fpmi_globals.send_config_pipe) == -1) {
 			zlog(ZLOG_SYSERROR, "failed to create pipe");
 			return -1;
 		}
@@ -500,11 +500,11 @@ int fpm_unix_init_main() /* {{{ */
 				return -1;
 
 			case 0 : /* children */
-				close(fpm_globals.send_config_pipe[0]); /* close the read side of the pipe */
+				close(fpmi_globals.send_config_pipe[0]); /* close the read side of the pipe */
 				break;
 
 			default : /* parent */
-				close(fpm_globals.send_config_pipe[1]); /* close the write side of the pipe */
+				close(fpmi_globals.send_config_pipe[1]); /* close the write side of the pipe */
 
 				/*
 				 * wait for 10s before exiting with error
@@ -512,66 +512,66 @@ int fpm_unix_init_main() /* {{{ */
 				 * how it goes for it
 				 */
 				FD_ZERO(&rfds);
-				FD_SET(fpm_globals.send_config_pipe[0], &rfds);
+				FD_SET(fpmi_globals.send_config_pipe[0], &rfds);
 
 				tv.tv_sec = 10;
 				tv.tv_usec = 0;
 
-				zlog(ZLOG_DEBUG, "The calling process is waiting for the master process to ping via fd=%d", fpm_globals.send_config_pipe[0]);
-				ret = select(fpm_globals.send_config_pipe[0] + 1, &rfds, NULL, NULL, &tv);
+				zlog(ZLOG_DEBUG, "The calling process is waiting for the master process to ping via fd=%d", fpmi_globals.send_config_pipe[0]);
+				ret = select(fpmi_globals.send_config_pipe[0] + 1, &rfds, NULL, NULL, &tv);
 				if (ret == -1) {
 					zlog(ZLOG_SYSERROR, "failed to select");
-					exit(FPM_EXIT_SOFTWARE);
+					exit(FPMI_EXIT_SOFTWARE);
 				}
 				if (ret) { /* data available */
 					int readval;
-					ret = read(fpm_globals.send_config_pipe[0], &readval, sizeof(readval));
+					ret = read(fpmi_globals.send_config_pipe[0], &readval, sizeof(readval));
 					if (ret == -1) {
 						zlog(ZLOG_SYSERROR, "failed to read from pipe");
-						exit(FPM_EXIT_SOFTWARE);
+						exit(FPMI_EXIT_SOFTWARE);
 					}
 
 					if (ret == 0) {
 						zlog(ZLOG_ERROR, "no data have been read from pipe");
-						exit(FPM_EXIT_SOFTWARE);
+						exit(FPMI_EXIT_SOFTWARE);
 					} else {
 						if (readval == 1) {
 							zlog(ZLOG_DEBUG, "I received a valid acknoledge from the master process, I can exit without error");
-							fpm_cleanups_run(FPM_CLEANUP_PARENT_EXIT);
-							exit(FPM_EXIT_OK);
+							fpmi_cleanups_run(FPMI_CLEANUP_PARENT_EXIT);
+							exit(FPMI_EXIT_OK);
 						} else {
 							zlog(ZLOG_DEBUG, "The master process returned an error !");
-							exit(FPM_EXIT_SOFTWARE);
+							exit(FPMI_EXIT_SOFTWARE);
 						}
 					}
 				} else { /* no date sent ! */
 					zlog(ZLOG_ERROR, "the master process didn't send back its status (via the pipe to the calling process)");
-				  exit(FPM_EXIT_SOFTWARE);
+				  exit(FPMI_EXIT_SOFTWARE);
 				}
-				exit(FPM_EXIT_SOFTWARE);
+				exit(FPMI_EXIT_SOFTWARE);
 		}
 	}
 
 	/* continue as a child */
 	setsid();
-	if (0 > fpm_clock_init()) {
+	if (0 > fpmi_clock_init()) {
 		return -1;
 	}
 
-	if (fpm_global_config.process_priority != 64) {
+	if (fpmi_global_config.process_priority != 64) {
 		if (is_root) {
-			if (setpriority(PRIO_PROCESS, 0, fpm_global_config.process_priority) < 0) {
+			if (setpriority(PRIO_PROCESS, 0, fpmi_global_config.process_priority) < 0) {
 				zlog(ZLOG_SYSERROR, "Unable to set priority for the master process");
 				return -1;
 			}
 		} else {
-			zlog(ZLOG_NOTICE, "'process.priority' directive is ignored when FPM is not running as root");
+			zlog(ZLOG_NOTICE, "'process.priority' directive is ignored when FPMI is not running as root");
 		}
 	}
 
-	fpm_globals.parent_pid = getpid();
-	for (wp = fpm_worker_all_pools; wp; wp = wp->next) {
-		if (0 > fpm_unix_conf_wp(wp)) {
+	fpmi_globals.parent_pid = getpid();
+	for (wp = fpmi_worker_all_pools; wp; wp = wp->next) {
+		if (0 > fpmi_unix_conf_wp(wp)) {
 			return -1;
 		}
 	}

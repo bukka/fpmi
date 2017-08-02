@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test Unix Domain Socket
+FPMI: Test Unix Domain Socket
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -7,8 +7,8 @@ FPM: Test Unix Domain Socket
 
 include "include.inc";
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
-$socket  = dirname(__FILE__).'/php-fpm.sock';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
+$socket  = dirname(__FILE__).'/php-fpmi.sock';
 
 $cfg = <<<EOT
 [global]
@@ -24,9 +24,9 @@ pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 EOT;
 
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
-    fpm_display_log($tail, 2);
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
+    fpmi_display_log($tail, 2);
     try {
 		var_dump(strpos(run_request('unix://'.$socket, -1), 'pong'));
 		echo "UDS ok\n";
@@ -34,20 +34,20 @@ if (is_resource($fpm)) {
 		echo "UDS error\n";
 	}
 
-	proc_terminate($fpm);
+	proc_terminate($fpmi);
     stream_get_contents($tail);
     fclose($tail);
-    proc_close($fpm);
+    proc_close($fpmi);
 }
 
 ?>
 --EXPECTF--
-[%d-%s-%d %d:%d:%d] NOTICE: fpm is running, pid %d
+[%d-%s-%d %d:%d:%d] NOTICE: fpmi is running, pid %d
 [%d-%s-%d %d:%d:%d] NOTICE: ready to handle connections
 int(%d)
 UDS ok
 --CLEAN--
 <?php
-    $logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+    $logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
     @unlink($logfile);
 ?>

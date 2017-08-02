@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test Unix Domain Socket with Posix ACL
+FPMI: Test Unix Domain Socket with Posix ACL
 --SKIPIF--
 <?php
 include "skipif.inc";
@@ -18,15 +18,15 @@ pm.start_servers = 2
 pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 EOT;
-if (test_fpm_conf($cfg, $msg) == false) { die("skip " .  $msg); }
+if (test_fpmi_conf($cfg, $msg) == false) { die("skip " .  $msg); }
 ?>
 --FILE--
 <?php
 
 include "include.inc";
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
-$socket  = dirname(__FILE__).'/php-fpm.sock';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
+$socket  = dirname(__FILE__).'/php-fpmi.sock';
 
 // Select 3 users and 2 groups known by system (avoid root)
 $users = $groups = [];
@@ -60,9 +60,9 @@ pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 EOT;
 
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
-    fpm_display_log($tail, 2);
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
+    fpmi_display_log($tail, 2);
     try {
 		var_dump(strpos(run_request('unix://'.$socket, -1), 'pong'));
 		echo "UDS ok\n";
@@ -71,15 +71,15 @@ if (is_resource($fpm)) {
 	}
 	passthru("/usr/bin/getfacl -cp $socket");
 
-	proc_terminate($fpm);
-    fpm_display_log($tail, -1);
+	proc_terminate($fpmi);
+    fpmi_display_log($tail, -1);
     fclose($tail);
-    proc_close($fpm);
+    proc_close($fpmi);
 }
 
 ?>
 --EXPECTF--
-[%s] NOTICE: fpm is running, pid %d
+[%s] NOTICE: fpmi is running, pid %d
 [%s] NOTICE: ready to handle connections
 int(%d)
 UDS ok
@@ -97,6 +97,6 @@ other::---
 [%s] NOTICE: exiting, bye-bye!
 --CLEAN--
 <?php
-    $logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+    $logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
     @unlink($logfile);
 ?>

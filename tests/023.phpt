@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test already bound address
+FPMI: Test already bound address
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -7,7 +7,7 @@ FPM: Test already bound address
 
 include "include.inc";
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
 $port = 9000+PHP_INT_SIZE;
 
 $cfg = <<<EOT
@@ -28,8 +28,8 @@ EOT;
 // Occupy our port and let things fail
 $busy = stream_socket_server("tcp://[::]:$port");
 
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
 	/* Expect two specific lines of log output and show them
 	 * If we get any different number of those patterns, display whole log
 	 */
@@ -48,10 +48,10 @@ if (is_resource($fpm)) {
 }
 ?>
 --EXPECTF--
-[%d-%s-%d %d:%d:%f] NOTICE: pid %d, fpm_socket_af_inet_listening_socket(), line %d: Failed implicitly binding to ::, retrying with 0.0.0.0
-[%d-%s-%d %d:%d:%f] ERROR: pid %d, fpm_sockets_new_listening_socket(), line %d: unable to bind listening socket for address '%d': %s
+[%d-%s-%d %d:%d:%f] NOTICE: pid %d, fpmi_socket_af_inet_listening_socket(), line %d: Failed implicitly binding to ::, retrying with 0.0.0.0
+[%d-%s-%d %d:%d:%f] ERROR: pid %d, fpmi_sockets_new_listening_socket(), line %d: unable to bind listening socket for address '%d': %s
 --CLEAN--
 <?php
-    $logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+    $logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
     @unlink($logfile);
 ?>

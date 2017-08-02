@@ -1,8 +1,8 @@
 
-	/* $Id: fpm_events.c,v 1.21.2.2 2008/12/13 03:21:18 anight Exp $ */
+	/* $Id: fpmi_events.c,v 1.21.2.2 2008/12/13 03:21:18 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <unistd.h>
 #include <errno.h>
@@ -11,16 +11,16 @@
 
 #include <php.h>
 
-#include "fpm.h"
-#include "fpm_process_ctl.h"
-#include "fpm_events.h"
-#include "fpm_cleanup.h"
-#include "fpm_stdio.h"
-#include "fpm_signals.h"
-#include "fpm_children.h"
+#include "fpmi.h"
+#include "fpmi_process_ctl.h"
+#include "fpmi_events.h"
+#include "fpmi_cleanup.h"
+#include "fpmi_stdio.h"
+#include "fpmi_signals.h"
+#include "fpmi_children.h"
 #include "zlog.h"
-#include "fpm_clock.h"
-#include "fpm_log.h"
+#include "fpmi_clock.h"
+#include "fpmi_log.h"
 
 #include "events/select.h"
 #include "events/poll.h"
@@ -30,30 +30,30 @@
 #include "events/kqueue.h"
 
 #ifdef HAVE_SYSTEMD
-#include "fpm_systemd.h"
+#include "fpmi_systemd.h"
 #endif
 
-#define fpm_event_set_timeout(ev, now) timeradd(&(now), &(ev)->frequency, &(ev)->timeout);
+#define fpmi_event_set_timeout(ev, now) timeradd(&(now), &(ev)->frequency, &(ev)->timeout);
 
-static void fpm_event_cleanup(int which, void *arg);
-static void fpm_got_signal(struct fpm_event_s *ev, short which, void *arg);
-static struct fpm_event_s *fpm_event_queue_isset(struct fpm_event_queue_s *queue, struct fpm_event_s *ev);
-static int fpm_event_queue_add(struct fpm_event_queue_s **queue, struct fpm_event_s *ev);
-static int fpm_event_queue_del(struct fpm_event_queue_s **queue, struct fpm_event_s *ev);
-static void fpm_event_queue_destroy(struct fpm_event_queue_s **queue);
+static void fpmi_event_cleanup(int which, void *arg);
+static void fpmi_got_signal(struct fpmi_event_s *ev, short which, void *arg);
+static struct fpmi_event_s *fpmi_event_queue_isset(struct fpmi_event_queue_s *queue, struct fpmi_event_s *ev);
+static int fpmi_event_queue_add(struct fpmi_event_queue_s **queue, struct fpmi_event_s *ev);
+static int fpmi_event_queue_del(struct fpmi_event_queue_s **queue, struct fpmi_event_s *ev);
+static void fpmi_event_queue_destroy(struct fpmi_event_queue_s **queue);
 
-static struct fpm_event_module_s *module;
-static struct fpm_event_queue_s *fpm_event_queue_timer = NULL;
-static struct fpm_event_queue_s *fpm_event_queue_fd = NULL;
+static struct fpmi_event_module_s *module;
+static struct fpmi_event_queue_s *fpmi_event_queue_timer = NULL;
+static struct fpmi_event_queue_s *fpmi_event_queue_fd = NULL;
 
-static void fpm_event_cleanup(int which, void *arg) /* {{{ */
+static void fpmi_event_cleanup(int which, void *arg) /* {{{ */
 {
-	fpm_event_queue_destroy(&fpm_event_queue_timer);
-	fpm_event_queue_destroy(&fpm_event_queue_fd);
+	fpmi_event_queue_destroy(&fpmi_event_queue_timer);
+	fpmi_event_queue_destroy(&fpmi_event_queue_fd);
 }
 /* }}} */
 
-static void fpm_got_signal(struct fpm_event_s *ev, short which, void *arg) /* {{{ */
+static void fpmi_got_signal(struct fpmi_event_s *ev, short which, void *arg) /* {{{ */
 {
 	char c;
 	int res, ret;
@@ -74,32 +74,32 @@ static void fpm_got_signal(struct fpm_event_s *ev, short which, void *arg) /* {{
 		switch (c) {
 			case 'C' :                  /* SIGCHLD */
 				zlog(ZLOG_DEBUG, "received SIGCHLD");
-				fpm_children_bury();
+				fpmi_children_bury();
 				break;
 			case 'I' :                  /* SIGINT  */
 				zlog(ZLOG_DEBUG, "received SIGINT");
 				zlog(ZLOG_NOTICE, "Terminating ...");
-				fpm_pctl(FPM_PCTL_STATE_TERMINATING, FPM_PCTL_ACTION_SET);
+				fpmi_pctl(FPMI_PCTL_STATE_TERMINATING, FPMI_PCTL_ACTION_SET);
 				break;
 			case 'T' :                  /* SIGTERM */
 				zlog(ZLOG_DEBUG, "received SIGTERM");
 				zlog(ZLOG_NOTICE, "Terminating ...");
-				fpm_pctl(FPM_PCTL_STATE_TERMINATING, FPM_PCTL_ACTION_SET);
+				fpmi_pctl(FPMI_PCTL_STATE_TERMINATING, FPMI_PCTL_ACTION_SET);
 				break;
 			case 'Q' :                  /* SIGQUIT */
 				zlog(ZLOG_DEBUG, "received SIGQUIT");
 				zlog(ZLOG_NOTICE, "Finishing ...");
-				fpm_pctl(FPM_PCTL_STATE_FINISHING, FPM_PCTL_ACTION_SET);
+				fpmi_pctl(FPMI_PCTL_STATE_FINISHING, FPMI_PCTL_ACTION_SET);
 				break;
 			case '1' :                  /* SIGUSR1 */
 				zlog(ZLOG_DEBUG, "received SIGUSR1");
-				if (0 == fpm_stdio_open_error_log(1)) {
+				if (0 == fpmi_stdio_open_error_log(1)) {
 					zlog(ZLOG_NOTICE, "error log file re-opened");
 				} else {
 					zlog(ZLOG_ERROR, "unable to re-opened error log file");
 				}
 
-				ret = fpm_log_open(1);
+				ret = fpmi_log_open(1);
 				if (ret == 0) {
 					zlog(ZLOG_NOTICE, "access log file re-opened");
 				} else if (ret == -1) {
@@ -111,11 +111,11 @@ static void fpm_got_signal(struct fpm_event_s *ev, short which, void *arg) /* {{
 			case '2' :                  /* SIGUSR2 */
 				zlog(ZLOG_DEBUG, "received SIGUSR2");
 				zlog(ZLOG_NOTICE, "Reloading in progress ...");
-				fpm_pctl(FPM_PCTL_STATE_RELOADING, FPM_PCTL_ACTION_SET);
+				fpmi_pctl(FPMI_PCTL_STATE_RELOADING, FPMI_PCTL_ACTION_SET);
 				break;
 		}
 
-		if (fpm_globals.is_child) {
+		if (fpmi_globals.is_child) {
 			break;
 		}
 	} while (1);
@@ -123,7 +123,7 @@ static void fpm_got_signal(struct fpm_event_s *ev, short which, void *arg) /* {{
 }
 /* }}} */
 
-static struct fpm_event_s *fpm_event_queue_isset(struct fpm_event_queue_s *queue, struct fpm_event_s *ev) /* {{{ */
+static struct fpmi_event_s *fpmi_event_queue_isset(struct fpmi_event_queue_s *queue, struct fpmi_event_s *ev) /* {{{ */
 {
 	if (!ev) {
 		return NULL;
@@ -140,19 +140,19 @@ static struct fpm_event_s *fpm_event_queue_isset(struct fpm_event_queue_s *queue
 }
 /* }}} */
 
-static int fpm_event_queue_add(struct fpm_event_queue_s **queue, struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_queue_add(struct fpmi_event_queue_s **queue, struct fpmi_event_s *ev) /* {{{ */
 {
-	struct fpm_event_queue_s *elt;
+	struct fpmi_event_queue_s *elt;
 
 	if (!queue || !ev) {
 		return -1;
 	}
 
-	if (fpm_event_queue_isset(*queue, ev)) {
+	if (fpmi_event_queue_isset(*queue, ev)) {
 		return 0;
 	}
 
-	if (!(elt = malloc(sizeof(struct fpm_event_queue_s)))) {
+	if (!(elt = malloc(sizeof(struct fpmi_event_queue_s)))) {
 		zlog(ZLOG_SYSERROR, "Unable to add the event to queue: malloc() failed");
 		return -1;
 	}
@@ -167,7 +167,7 @@ static int fpm_event_queue_add(struct fpm_event_queue_s **queue, struct fpm_even
 	*queue = elt;
 
 	/* ask the event module to add the fd from its own queue */
-	if (*queue == fpm_event_queue_fd && module->add) {
+	if (*queue == fpmi_event_queue_fd && module->add) {
 		module->add(ev);
 	}
 
@@ -175,9 +175,9 @@ static int fpm_event_queue_add(struct fpm_event_queue_s **queue, struct fpm_even
 }
 /* }}} */
 
-static int fpm_event_queue_del(struct fpm_event_queue_s **queue, struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_queue_del(struct fpmi_event_queue_s **queue, struct fpmi_event_s *ev) /* {{{ */
 {
-	struct fpm_event_queue_s *q;
+	struct fpmi_event_queue_s *q;
 	if (!queue || !ev) {
 		return -1;
 	}
@@ -198,7 +198,7 @@ static int fpm_event_queue_del(struct fpm_event_queue_s **queue, struct fpm_even
 			}
 
 			/* ask the event module to remove the fd from its own queue */
-			if (*queue == fpm_event_queue_fd && module->remove) {
+			if (*queue == fpmi_event_queue_fd && module->remove) {
 				module->remove(ev);
 			}
 
@@ -211,15 +211,15 @@ static int fpm_event_queue_del(struct fpm_event_queue_s **queue, struct fpm_even
 }
 /* }}} */
 
-static void fpm_event_queue_destroy(struct fpm_event_queue_s **queue) /* {{{ */
+static void fpmi_event_queue_destroy(struct fpmi_event_queue_s **queue) /* {{{ */
 {
-	struct fpm_event_queue_s *q, *tmp;
+	struct fpmi_event_queue_s *q, *tmp;
 
 	if (!queue) {
 		return;
 	}
 
-	if (*queue == fpm_event_queue_fd && module->clean) {
+	if (*queue == fpmi_event_queue_fd && module->clean) {
 		module->clean();
 	}
 
@@ -234,10 +234,10 @@ static void fpm_event_queue_destroy(struct fpm_event_queue_s **queue) /* {{{ */
 }
 /* }}} */
 
-int fpm_event_pre_init(char *machanism) /* {{{ */
+int fpmi_event_pre_init(char *machanism) /* {{{ */
 {
 	/* kqueue */
-	module = fpm_event_kqueue_module();
+	module = fpmi_event_kqueue_module();
 	if (module) {
 		if (!machanism || strcasecmp(module->name, machanism) == 0) {
 			return 0;
@@ -245,7 +245,7 @@ int fpm_event_pre_init(char *machanism) /* {{{ */
 	}
 
 	/* port */
-	module = fpm_event_port_module();
+	module = fpmi_event_port_module();
 	if (module) {
 		if (!machanism || strcasecmp(module->name, machanism) == 0) {
 			return 0;
@@ -253,7 +253,7 @@ int fpm_event_pre_init(char *machanism) /* {{{ */
 	}
 
 	/* epoll */
-	module = fpm_event_epoll_module();
+	module = fpmi_event_epoll_module();
 	if (module) {
 		if (!machanism || strcasecmp(module->name, machanism) == 0) {
 			return 0;
@@ -261,7 +261,7 @@ int fpm_event_pre_init(char *machanism) /* {{{ */
 	}
 
 	/* /dev/poll */
-	module = fpm_event_devpoll_module();
+	module = fpmi_event_devpoll_module();
 	if (module) {
 		if (!machanism || strcasecmp(module->name, machanism) == 0) {
 			return 0;
@@ -269,7 +269,7 @@ int fpm_event_pre_init(char *machanism) /* {{{ */
 	}
 
 	/* poll */
-	module = fpm_event_poll_module();
+	module = fpmi_event_poll_module();
 	if (module) {
 		if (!machanism || strcasecmp(module->name, machanism) == 0) {
 			return 0;
@@ -277,7 +277,7 @@ int fpm_event_pre_init(char *machanism) /* {{{ */
 	}
 
 	/* select */
-	module = fpm_event_select_module();
+	module = fpmi_event_select_module();
 	if (module) {
 		if (!machanism || strcasecmp(module->name, machanism) == 0) {
 			return 0;
@@ -293,21 +293,21 @@ int fpm_event_pre_init(char *machanism) /* {{{ */
 }
 /* }}} */
 
-const char *fpm_event_machanism_name() /* {{{ */
+const char *fpmi_event_machanism_name() /* {{{ */
 {
 	return module ? module->name : NULL;
 }
 /* }}} */
 
-int fpm_event_support_edge_trigger() /* {{{ */
+int fpmi_event_support_edge_trigger() /* {{{ */
 {
 	return module ? module->support_edge_trigger : 0;
 }
 /* }}} */
 
-int fpm_event_init_main() /* {{{ */
+int fpmi_event_init_main() /* {{{ */
 {
-	struct fpm_worker_pool_s *wp;
+	struct fpmi_worker_pool_s *wp;
 	int max;
 
 	if (!module) {
@@ -322,7 +322,7 @@ int fpm_event_init_main() /* {{{ */
 
 	/* count the max number of necessary fds for polling */
 	max = 1; /* only one FD is necessary at startup for the master process signal pipe */
-	for (wp = fpm_worker_all_pools; wp; wp = wp->next) {
+	for (wp = fpmi_worker_all_pools; wp; wp = wp->next) {
 		if (!wp->config) continue;
 		if (wp->config->catch_workers_output && wp->config->pm_max_children > 0) {
 			max += (wp->config->pm_max_children * 2);
@@ -336,43 +336,43 @@ int fpm_event_init_main() /* {{{ */
 
 	zlog(ZLOG_DEBUG, "event module is %s and %d fds have been reserved", module->name, max);
 
-	if (0 > fpm_cleanup_add(FPM_CLEANUP_ALL, fpm_event_cleanup, NULL)) {
+	if (0 > fpmi_cleanup_add(FPMI_CLEANUP_ALL, fpmi_event_cleanup, NULL)) {
 		return -1;
 	}
 	return 0;
 }
 /* }}} */
 
-void fpm_event_loop(int err) /* {{{ */
+void fpmi_event_loop(int err) /* {{{ */
 {
-	static struct fpm_event_s signal_fd_event;
+	static struct fpmi_event_s signal_fd_event;
 
 	/* sanity check */
-	if (fpm_globals.parent_pid != getpid()) {
+	if (fpmi_globals.parent_pid != getpid()) {
 		return;
 	}
 
-	fpm_event_set(&signal_fd_event, fpm_signals_get_fd(), FPM_EV_READ, &fpm_got_signal, NULL);
-	fpm_event_add(&signal_fd_event, 0);
+	fpmi_event_set(&signal_fd_event, fpmi_signals_get_fd(), FPMI_EV_READ, &fpmi_got_signal, NULL);
+	fpmi_event_add(&signal_fd_event, 0);
 
 	/* add timers */
-	if (fpm_globals.heartbeat > 0) {
-		fpm_pctl_heartbeat(NULL, 0, NULL);
+	if (fpmi_globals.heartbeat > 0) {
+		fpmi_pctl_heartbeat(NULL, 0, NULL);
 	}
 
 	if (!err) {
-		fpm_pctl_perform_idle_server_maintenance_heartbeat(NULL, 0, NULL);
+		fpmi_pctl_perform_idle_server_maintenance_heartbeat(NULL, 0, NULL);
 
-		zlog(ZLOG_DEBUG, "%zu bytes have been reserved in SHM", fpm_shm_get_size_allocated());
+		zlog(ZLOG_DEBUG, "%zu bytes have been reserved in SHM", fpmi_shm_get_size_allocated());
 		zlog(ZLOG_NOTICE, "ready to handle connections");
 
 #ifdef HAVE_SYSTEMD
-		fpm_systemd_heartbeat(NULL, 0, NULL);
+		fpmi_systemd_heartbeat(NULL, 0, NULL);
 #endif
 	}
 
 	while (1) {
-		struct fpm_event_queue_s *q, *q2;
+		struct fpmi_event_queue_s *q, *q2;
 		struct timeval ms;
 		struct timeval tmp;
 		struct timeval now;
@@ -380,15 +380,15 @@ void fpm_event_loop(int err) /* {{{ */
 		int ret;
 
 		/* sanity check */
-		if (fpm_globals.parent_pid != getpid()) {
+		if (fpmi_globals.parent_pid != getpid()) {
 			return;
 		}
 
-		fpm_clock_get(&now);
+		fpmi_clock_get(&now);
 		timerclear(&ms);
 
 		/* search in the timeout queue for the next timer to trigger */
-		q = fpm_event_queue_timer;
+		q = fpmi_event_queue_timer;
 		while (q) {
 			if (!timerisset(&ms)) {
 				ms = q->ev->timeout;
@@ -408,7 +408,7 @@ void fpm_event_loop(int err) /* {{{ */
 			timeout = (tmp.tv_sec * 1000) + (tmp.tv_usec / 1000) + 1;
 		}
 
-		ret = module->wait(fpm_event_queue_fd, timeout);
+		ret = module->wait(fpmi_event_queue_fd, timeout);
 
 		/* is a child, nothing to do here */
 		if (ret == -2) {
@@ -420,18 +420,18 @@ void fpm_event_loop(int err) /* {{{ */
 		}
 
 		/* trigger timers */
-		q = fpm_event_queue_timer;
+		q = fpmi_event_queue_timer;
 		while (q) {
-			fpm_clock_get(&now);
+			fpmi_clock_get(&now);
 			if (q->ev) {
 				if (timercmp(&now, &q->ev->timeout, >) || timercmp(&now, &q->ev->timeout, ==)) {
-					fpm_event_fire(q->ev);
+					fpmi_event_fire(q->ev);
 					/* sanity check */
-					if (fpm_globals.parent_pid != getpid()) {
+					if (fpmi_globals.parent_pid != getpid()) {
 						return;
 					}
-					if (q->ev->flags & FPM_EV_PERSIST) {
-						fpm_event_set_timeout(q->ev, now);
+					if (q->ev->flags & FPMI_EV_PERSIST) {
+						fpmi_event_set_timeout(q->ev, now);
 					} else { /* delete the event */
 						q2 = q;
 						if (q->prev) {
@@ -440,10 +440,10 @@ void fpm_event_loop(int err) /* {{{ */
 						if (q->next) {
 							q->next->prev = q->prev;
 						}
-						if (q == fpm_event_queue_timer) {
-							fpm_event_queue_timer = q->next;
-							if (fpm_event_queue_timer) {
-								fpm_event_queue_timer->prev = NULL;
+						if (q == fpmi_event_queue_timer) {
+							fpmi_event_queue_timer = q->next;
+							if (fpmi_event_queue_timer) {
+								fpmi_event_queue_timer->prev = NULL;
 							}
 						}
 						q = q->next;
@@ -458,22 +458,22 @@ void fpm_event_loop(int err) /* {{{ */
 }
 /* }}} */
 
-void fpm_event_fire(struct fpm_event_s *ev) /* {{{ */
+void fpmi_event_fire(struct fpmi_event_s *ev) /* {{{ */
 {
 	if (!ev || !ev->callback) {
 		return;
 	}
 
-	(*ev->callback)( (struct fpm_event_s *) ev, ev->which, ev->arg);
+	(*ev->callback)( (struct fpmi_event_s *) ev, ev->which, ev->arg);
 }
 /* }}} */
 
-int fpm_event_set(struct fpm_event_s *ev, int fd, int flags, void (*callback)(struct fpm_event_s *, short, void *), void *arg) /* {{{ */
+int fpmi_event_set(struct fpmi_event_s *ev, int fd, int flags, void (*callback)(struct fpmi_event_s *, short, void *), void *arg) /* {{{ */
 {
 	if (!ev || !callback || fd < -1) {
 		return -1;
 	}
-	memset(ev, 0, sizeof(struct fpm_event_s));
+	memset(ev, 0, sizeof(struct fpmi_event_s));
 	ev->fd = fd;
 	ev->callback = callback;
 	ev->arg = arg;
@@ -482,7 +482,7 @@ int fpm_event_set(struct fpm_event_s *ev, int fd, int flags, void (*callback)(st
 }
 /* }}} */
 
-int fpm_event_add(struct fpm_event_s *ev, unsigned long int frequency) /* {{{ */
+int fpmi_event_add(struct fpmi_event_s *ev, unsigned long int frequency) /* {{{ */
 {
 	struct timeval now;
 	struct timeval tmp;
@@ -494,18 +494,18 @@ int fpm_event_add(struct fpm_event_s *ev, unsigned long int frequency) /* {{{ */
 	ev->index = -1;
 
 	/* it's a triggered event on incoming data */
-	if (ev->flags & FPM_EV_READ) {
-		ev->which = FPM_EV_READ;
-		if (fpm_event_queue_add(&fpm_event_queue_fd, ev) != 0) {
+	if (ev->flags & FPMI_EV_READ) {
+		ev->which = FPMI_EV_READ;
+		if (fpmi_event_queue_add(&fpmi_event_queue_fd, ev) != 0) {
 			return -1;
 		}
 		return 0;
 	}
 
 	/* it's a timer event */
-	ev->which = FPM_EV_TIMEOUT;
+	ev->which = FPMI_EV_TIMEOUT;
 
-	fpm_clock_get(&now);
+	fpmi_clock_get(&now);
 	if (frequency >= 1000) {
 		tmp.tv_sec = frequency / 1000;
 		tmp.tv_usec = (frequency % 1000) * 1000;
@@ -514,9 +514,9 @@ int fpm_event_add(struct fpm_event_s *ev, unsigned long int frequency) /* {{{ */
 		tmp.tv_usec = frequency * 1000;
 	}
 	ev->frequency = tmp;
-	fpm_event_set_timeout(ev, now);
+	fpmi_event_set_timeout(ev, now);
 
-	if (fpm_event_queue_add(&fpm_event_queue_timer, ev) != 0) {
+	if (fpmi_event_queue_add(&fpmi_event_queue_timer, ev) != 0) {
 		return -1;
 	}
 
@@ -524,13 +524,13 @@ int fpm_event_add(struct fpm_event_s *ev, unsigned long int frequency) /* {{{ */
 }
 /* }}} */
 
-int fpm_event_del(struct fpm_event_s *ev) /* {{{ */
+int fpmi_event_del(struct fpmi_event_s *ev) /* {{{ */
 {
-	if (ev->index >= 0 && fpm_event_queue_del(&fpm_event_queue_fd, ev) != 0) {
+	if (ev->index >= 0 && fpmi_event_queue_del(&fpmi_event_queue_fd, ev) != 0) {
 		return -1;
 	}
 
-	if (ev->index < 0 && fpm_event_queue_del(&fpm_event_queue_timer, ev) != 0) {
+	if (ev->index < 0 && fpmi_event_queue_del(&fpmi_event_queue_timer, ev) != 0) {
 		return -1;
 	}
 

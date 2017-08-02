@@ -18,9 +18,9 @@
 
 /* $Id$ */
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
-#include "../fpm.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
+#include "../fpmi.h"
 #include "../zlog.h"
 
 #if HAVE_EPOLL
@@ -28,20 +28,20 @@
 #include <sys/epoll.h>
 #include <errno.h>
 
-static int fpm_event_epoll_init(int max);
-static int fpm_event_epoll_clean();
-static int fpm_event_epoll_wait(struct fpm_event_queue_s *queue, unsigned long int timeout);
-static int fpm_event_epoll_add(struct fpm_event_s *ev);
-static int fpm_event_epoll_remove(struct fpm_event_s *ev);
+static int fpmi_event_epoll_init(int max);
+static int fpmi_event_epoll_clean();
+static int fpmi_event_epoll_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout);
+static int fpmi_event_epoll_add(struct fpmi_event_s *ev);
+static int fpmi_event_epoll_remove(struct fpmi_event_s *ev);
 
-static struct fpm_event_module_s epoll_module = {
+static struct fpmi_event_module_s epoll_module = {
 	.name = "epoll",
 	.support_edge_trigger = 1,
-	.init = fpm_event_epoll_init,
-	.clean = fpm_event_epoll_clean,
-	.wait = fpm_event_epoll_wait,
-	.add = fpm_event_epoll_add,
-	.remove = fpm_event_epoll_remove,
+	.init = fpmi_event_epoll_init,
+	.clean = fpmi_event_epoll_clean,
+	.wait = fpmi_event_epoll_wait,
+	.add = fpmi_event_epoll_add,
+	.remove = fpmi_event_epoll_remove,
 };
 
 static struct epoll_event *epollfds = NULL;
@@ -50,7 +50,7 @@ static int epollfd = -1;
 
 #endif /* HAVE_EPOLL */
 
-struct fpm_event_module_s *fpm_event_epoll_module() /* {{{ */
+struct fpmi_event_module_s *fpmi_event_epoll_module() /* {{{ */
 {
 #if HAVE_EPOLL
 	return &epoll_module;
@@ -65,7 +65,7 @@ struct fpm_event_module_s *fpm_event_epoll_module() /* {{{ */
 /*
  * Init the module
  */
-static int fpm_event_epoll_init(int max) /* {{{ */
+static int fpmi_event_epoll_init(int max) /* {{{ */
 {
 	if (max < 1) {
 		return 0;
@@ -96,7 +96,7 @@ static int fpm_event_epoll_init(int max) /* {{{ */
 /*
  * Clean the module
  */
-static int fpm_event_epoll_clean() /* {{{ */
+static int fpmi_event_epoll_clean() /* {{{ */
 {
 	/* free epollfds */
 	if (epollfds) {
@@ -117,7 +117,7 @@ static int fpm_event_epoll_clean() /* {{{ */
 /*
  * wait for events or timeout
  */
-static int fpm_event_epoll_wait(struct fpm_event_queue_s *queue, unsigned long int timeout) /* {{{ */
+static int fpmi_event_epoll_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout) /* {{{ */
 {
 	int ret, i;
 
@@ -144,10 +144,10 @@ static int fpm_event_epoll_wait(struct fpm_event_queue_s *queue, unsigned long i
 		}
 
 		/* fire the event */
-		fpm_event_fire((struct fpm_event_s *)epollfds[i].data.ptr);
+		fpmi_event_fire((struct fpmi_event_s *)epollfds[i].data.ptr);
 
 		/* sanity check */
-		if (fpm_globals.parent_pid != getpid()) {
+		if (fpmi_globals.parent_pid != getpid()) {
 			return -2;
 		}
 	}
@@ -159,7 +159,7 @@ static int fpm_event_epoll_wait(struct fpm_event_queue_s *queue, unsigned long i
 /*
  * Add a FD to the fd set
  */
-static int fpm_event_epoll_add(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_epoll_add(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct epoll_event e;
 
@@ -172,7 +172,7 @@ static int fpm_event_epoll_add(struct fpm_event_s *ev) /* {{{ */
 	e.data.fd = ev->fd;
 	e.data.ptr = (void *)ev;
 
-	if (ev->flags & FPM_EV_EDGE) {
+	if (ev->flags & FPMI_EV_EDGE) {
 		e.events = e.events | EPOLLET;
 	}
 
@@ -191,16 +191,16 @@ static int fpm_event_epoll_add(struct fpm_event_s *ev) /* {{{ */
 /*
  * Remove a FD from the fd set
  */
-static int fpm_event_epoll_remove(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_epoll_remove(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct epoll_event e;
 
-	/* fill epoll struct the same way we did in fpm_event_epoll_add() */
+	/* fill epoll struct the same way we did in fpmi_event_epoll_add() */
 	e.events = EPOLLIN;
 	e.data.fd = ev->fd;
 	e.data.ptr = (void *)ev;
 
-	if (ev->flags & FPM_EV_EDGE) {
+	if (ev->flags & FPMI_EV_EDGE) {
 		e.events = e.events | EPOLLET;
 	}
 

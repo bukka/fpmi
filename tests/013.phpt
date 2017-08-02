@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test for log_level in fpm_unix_init_main #68381
+FPMI: Test for log_level in fpmi_unix_init_main #68381
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -7,7 +7,7 @@ FPM: Test for log_level in fpm_unix_init_main #68381
 
 include "include.inc";
 
-$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
 $port = 9000+PHP_INT_SIZE;
 
 $cfg = <<<EOT
@@ -23,8 +23,8 @@ pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 EOT;
 
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
     $i = 0;
 	while (($i++ < 60) && !($fp = @fsockopen('127.0.0.1', $port))) {
 		usleep(50000);
@@ -33,12 +33,12 @@ if (is_resource($fpm)) {
 		echo "Started\n";
 		fclose($fp);
 	}
-	proc_terminate($fpm);
+	proc_terminate($fpmi);
 	if (!feof($tail)) {
 		echo stream_get_contents($tail);
 	}
 	fclose($tail);
-	proc_close($fpm);
+	proc_close($fpmi);
 }
 
 ?>
@@ -48,6 +48,6 @@ Started
 Done
 --CLEAN--
 <?php
-	$logfile = dirname(__FILE__).'/php-fpm.log.tmp';
+	$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
 	@unlink($logfile);
 ?>

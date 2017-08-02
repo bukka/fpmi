@@ -1,13 +1,13 @@
 
-	/* $Id: fpm_cleanup.c,v 1.8 2008/05/24 17:38:47 anight Exp $ */
+	/* $Id: fpmi_cleanup.c,v 1.8 2008/05/24 17:38:47 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <stdlib.h>
 
-#include "fpm_arrays.h"
-#include "fpm_cleanup.h"
+#include "fpmi_arrays.h"
+#include "fpmi_cleanup.h"
 
 struct cleanup_s {
 	int type;
@@ -15,13 +15,13 @@ struct cleanup_s {
 	void *arg;
 };
 
-static struct fpm_array_s cleanups = { .sz = sizeof(struct cleanup_s) };
+static struct fpmi_array_s cleanups = { .sz = sizeof(struct cleanup_s) };
 
-int fpm_cleanup_add(int type, void (*cleanup)(int, void *), void *arg) /* {{{ */
+int fpmi_cleanup_add(int type, void (*cleanup)(int, void *), void *arg) /* {{{ */
 {
 	struct cleanup_s *c;
 
-	c = fpm_array_push(&cleanups);
+	c = fpmi_array_push(&cleanups);
 
 	if (!c) {
 		return -1;
@@ -35,9 +35,9 @@ int fpm_cleanup_add(int type, void (*cleanup)(int, void *), void *arg) /* {{{ */
 }
 /* }}} */
 
-void fpm_cleanups_run(int type) /* {{{ */
+void fpmi_cleanups_run(int type) /* {{{ */
 {
-	struct cleanup_s *c = fpm_array_item_last(&cleanups);
+	struct cleanup_s *c = fpmi_array_item_last(&cleanups);
 	int cl = cleanups.used;
 
 	for ( ; cl--; c--) {
@@ -46,7 +46,7 @@ void fpm_cleanups_run(int type) /* {{{ */
 		}
 	}
 
-	fpm_array_free(&cleanups);
+	fpmi_array_free(&cleanups);
 }
 /* }}} */
 

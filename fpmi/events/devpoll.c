@@ -18,9 +18,9 @@
 
 /* $Id$ */
 
-#include "../fpm_config.h"
-#include "../fpm_events.h"
-#include "../fpm.h"
+#include "../fpmi_config.h"
+#include "../fpmi_events.h"
+#include "../fpmi.h"
 #include "../zlog.h"
 
 #if HAVE_DEVPOLL
@@ -32,20 +32,20 @@
 #include <sys/devpoll.h>
 #include <errno.h>
 
-static int fpm_event_devpoll_init(int max);
-static int fpm_event_devpoll_clean();
-static int fpm_event_devpoll_wait(struct fpm_event_queue_s *queue, unsigned long int timeout);
-static int fpm_event_devpoll_add(struct fpm_event_s *ev);
-static int fpm_event_devpoll_remove(struct fpm_event_s *ev);
+static int fpmi_event_devpoll_init(int max);
+static int fpmi_event_devpoll_clean();
+static int fpmi_event_devpoll_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout);
+static int fpmi_event_devpoll_add(struct fpmi_event_s *ev);
+static int fpmi_event_devpoll_remove(struct fpmi_event_s *ev);
 
-static struct fpm_event_module_s devpoll_module = {
+static struct fpmi_event_module_s devpoll_module = {
 	.name = "/dev/poll",
 	.support_edge_trigger = 0,
-	.init = fpm_event_devpoll_init,
-	.clean = fpm_event_devpoll_clean,
-	.wait = fpm_event_devpoll_wait,
-	.add = fpm_event_devpoll_add,
-	.remove = fpm_event_devpoll_remove,
+	.init = fpmi_event_devpoll_init,
+	.clean = fpmi_event_devpoll_clean,
+	.wait = fpmi_event_devpoll_wait,
+	.add = fpmi_event_devpoll_add,
+	.remove = fpmi_event_devpoll_remove,
 };
 
 int dpfd = -1;
@@ -55,7 +55,7 @@ static int npollfds = 0;
 
 #endif /* HAVE_DEVPOLL */
 
-struct fpm_event_module_s *fpm_event_devpoll_module() /* {{{ */
+struct fpmi_event_module_s *fpmi_event_devpoll_module() /* {{{ */
 {
 #if HAVE_DEVPOLL
 	return &devpoll_module;
@@ -70,7 +70,7 @@ struct fpm_event_module_s *fpm_event_devpoll_module() /* {{{ */
 /*
  * Init module
  */
-static int fpm_event_devpoll_init(int max) /* {{{ */
+static int fpmi_event_devpoll_init(int max) /* {{{ */
 {
 	int i;
 
@@ -117,7 +117,7 @@ static int fpm_event_devpoll_init(int max) /* {{{ */
 /*
  * Clean the module
  */
-static int fpm_event_devpoll_clean() /* {{{ */
+static int fpmi_event_devpoll_clean() /* {{{ */
 {
 	/* close /dev/poll if open */
 	if (dpfd > -1) {
@@ -145,10 +145,10 @@ static int fpm_event_devpoll_clean() /* {{{ */
 /*
  * wait for events or timeout
  */
-static int fpm_event_devpoll_wait(struct fpm_event_queue_s *queue, unsigned long int timeout) /* {{{ */
+static int fpmi_event_devpoll_wait(struct fpmi_event_queue_s *queue, unsigned long int timeout) /* {{{ */
 {
 	int ret, i;
-	struct fpm_event_queue_s *q;
+	struct fpmi_event_queue_s *q;
 	struct dvpoll dopoll;
 
 	/* setup /dev/poll */
@@ -179,10 +179,10 @@ static int fpm_event_devpoll_wait(struct fpm_event_queue_s *queue, unsigned long
 			if (q->ev && q->ev->fd == active_pollfds[i].fd) {
 
 					/* fire the event */
-					fpm_event_fire(q->ev);
+					fpmi_event_fire(q->ev);
 
 					/* sanity check */
-					if (fpm_globals.parent_pid != getpid()) {
+					if (fpmi_globals.parent_pid != getpid()) {
 						return -2;
 					}
 				break; /* next triggered event */
@@ -198,7 +198,7 @@ static int fpm_event_devpoll_wait(struct fpm_event_queue_s *queue, unsigned long
 /*
  * Add a FD from the fd set
  */
-static int fpm_event_devpoll_add(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_devpoll_add(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct pollfd pollfd;
 
@@ -223,11 +223,11 @@ static int fpm_event_devpoll_add(struct fpm_event_s *ev) /* {{{ */
 /*
  * Remove a FD from the fd set
  */
-static int fpm_event_devpoll_remove(struct fpm_event_s *ev) /* {{{ */
+static int fpmi_event_devpoll_remove(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct pollfd pollfd;
 
-	/* fill pollfd with the same informations as fpm_event_devpoll_add */
+	/* fill pollfd with the same informations as fpmi_event_devpoll_add */
 	pollfd.fd = ev->fd;
 	pollfd.events = POLLIN | POLLREMOVE;
 	pollfd.revents = 0;

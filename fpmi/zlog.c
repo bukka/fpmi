@@ -2,7 +2,7 @@
 	/* $Id: zlog.c,v 1.7 2008/05/22 21:08:32 anight Exp $ */
 	/* (c) 2004-2007 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -15,7 +15,7 @@
 #include "php_syslog.h"
 
 #include "zlog.h"
-#include "fpm.h"
+#include "fpmi.h"
 #include "zend_portability.h"
 
 #define MAX_LINE_LENGTH 1024
@@ -128,7 +128,7 @@ void vzlog(const char *function, int line, int flags, const char *fmt, va_list a
 
 	saved_errno = errno;
 #ifdef HAVE_SYSLOG_H
-	if (zlog_fd == ZLOG_SYSLOG /* && !fpm_globals.is_child */) {
+	if (zlog_fd == ZLOG_SYSLOG /* && !fpmi_globals.is_child */) {
 		len = 0;
 		if (zlog_level == ZLOG_DEBUG) {
 			len += snprintf(buf, buf_size, "[%s] %s(), line %d: ", level_names[flags & ZLOG_LEVEL_MASK], function, line);
@@ -138,12 +138,12 @@ void vzlog(const char *function, int line, int flags, const char *fmt, va_list a
 	} else
 #endif
 	{
-		if (!fpm_globals.is_child) {
+		if (!fpmi_globals.is_child) {
 			gettimeofday(&tv, 0);
 			len = zlog_print_time(&tv, buf, buf_size);
 		}
 		if (zlog_level == ZLOG_DEBUG) {
-			if (!fpm_globals.is_child) {
+			if (!fpmi_globals.is_child) {
 				len += snprintf(buf + len, buf_size - len, "%s: pid %d, %s(), line %d: ", level_names[flags & ZLOG_LEVEL_MASK], getpid(), function, line);
 			} else {
 				len += snprintf(buf + len, buf_size - len, "%s: %s(), line %d: ", level_names[flags & ZLOG_LEVEL_MASK], function, line);

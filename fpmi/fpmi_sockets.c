@@ -1,8 +1,8 @@
 
-	/* $Id: fpm_sockets.c,v 1.20.2.1 2008/12/13 03:21:18 anight Exp $ */
+	/* $Id: fpmi_sockets.c,v 1.20.2.1 2008/12/13 03:21:18 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
@@ -21,14 +21,14 @@
 #include <unistd.h>
 
 #include "zlog.h"
-#include "fpm_arrays.h"
-#include "fpm_sockets.h"
-#include "fpm_worker_pool.h"
-#include "fpm_unix.h"
-#include "fpm_str.h"
-#include "fpm_env.h"
-#include "fpm_cleanup.h"
-#include "fpm_scoreboard.h"
+#include "fpmi_arrays.h"
+#include "fpmi_sockets.h"
+#include "fpmi_worker_pool.h"
+#include "fpmi_unix.h"
+#include "fpmi_str.h"
+#include "fpmi_env.h"
+#include "fpmi_cleanup.h"
+#include "fpmi_scoreboard.h"
 
 struct listening_socket_s {
 	int refcount;
@@ -37,11 +37,11 @@ struct listening_socket_s {
 	char *key;
 };
 
-static struct fpm_array_s sockets_list;
+static struct fpmi_array_s sockets_list;
 
-enum { FPM_GET_USE_SOCKET = 1, FPM_STORE_SOCKET = 2, FPM_STORE_USE_SOCKET = 3 };
+enum { FPMI_GET_USE_SOCKET = 1, FPMI_STORE_SOCKET = 2, FPMI_STORE_USE_SOCKET = 3 };
 
-static void fpm_sockets_cleanup(int which, void *arg) /* {{{ */
+static void fpmi_sockets_cleanup(int which, void *arg) /* {{{ */
 {
 	unsigned i;
 	char *env_value = 0;
@@ -49,7 +49,7 @@ static void fpm_sockets_cleanup(int which, void *arg) /* {{{ */
 	struct listening_socket_s *ls = sockets_list.data;
 
 	for (i = 0; i < sockets_list.used; i++, ls++) {
-		if (which != FPM_CLEANUP_PARENT_EXEC) {
+		if (which != FPMI_CLEANUP_PARENT_EXEC) {
 			close(ls->sock);
 		} else { /* on PARENT EXEC we want socket fds to be inherited through environment variable */
 			char fd[32];
@@ -58,8 +58,8 @@ static void fpm_sockets_cleanup(int which, void *arg) /* {{{ */
 			p += sprintf(env_value + p, "%s%s=%s", p ? "," : "", ls->key, fd);
 		}
 
-		if (which == FPM_CLEANUP_PARENT_EXIT_MAIN) {
-			if (ls->type == FPM_AF_UNIX) {
+		if (which == FPMI_CLEANUP_PARENT_EXIT_MAIN) {
+			if (ls->type == FPMI_AF_UNIX) {
 				unlink(ls->key);
 			}
 		}
@@ -67,15 +67,15 @@ static void fpm_sockets_cleanup(int which, void *arg) /* {{{ */
 	}
 
 	if (env_value) {
-		setenv("FPM_SOCKETS", env_value, 1);
+		setenv("FPMI_SOCKETS", env_value, 1);
 		free(env_value);
 	}
 
-	fpm_array_free(&sockets_list);
+	fpmi_array_free(&sockets_list);
 }
 /* }}} */
 
-static void *fpm_get_in_addr(struct sockaddr *sa) /* {{{ */
+static void *fpmi_get_in_addr(struct sockaddr *sa) /* {{{ */
 {
     if (sa->sa_family == AF_INET) {
         return &(((struct sockaddr_in*)sa)->sin_addr);
@@ -85,7 +85,7 @@ static void *fpm_get_in_addr(struct sockaddr *sa) /* {{{ */
 }
 /* }}} */
 
-static int fpm_get_in_port(struct sockaddr *sa) /* {{{ */
+static int fpmi_get_in_port(struct sockaddr *sa) /* {{{ */
 {
     if (sa->sa_family == AF_INET) {
         return ntohs(((struct sockaddr_in*)sa)->sin_port);
@@ -95,18 +95,18 @@ static int fpm_get_in_port(struct sockaddr *sa) /* {{{ */
 }
 /* }}} */
 
-static int fpm_sockets_hash_op(int sock, struct sockaddr *sa, char *key, int type, int op) /* {{{ */
+static int fpmi_sockets_hash_op(int sock, struct sockaddr *sa, char *key, int type, int op) /* {{{ */
 {
 	if (key == NULL) {
 		switch (type) {
-			case FPM_AF_INET : {
+			case FPMI_AF_INET : {
 				key = alloca(INET6_ADDRSTRLEN+10);
-				inet_ntop(sa->sa_family, fpm_get_in_addr(sa), key, INET6_ADDRSTRLEN);
-				sprintf(key+strlen(key), ":%d", fpm_get_in_port(sa));
+				inet_ntop(sa->sa_family, fpmi_get_in_addr(sa), key, INET6_ADDRSTRLEN);
+				sprintf(key+strlen(key), ":%d", fpmi_get_in_port(sa));
 				break;
 			}
 
-			case FPM_AF_UNIX : {
+			case FPMI_AF_UNIX : {
 				struct sockaddr_un *sa_un = (struct sockaddr_un *) sa;
 				key = alloca(strlen(sa_un->sun_path) + 1);
 				strcpy(key, sa_un->sun_path);
@@ -120,7 +120,7 @@ static int fpm_sockets_hash_op(int sock, struct sockaddr *sa, char *key, int typ
 
 	switch (op) {
 
-		case FPM_GET_USE_SOCKET :
+		case FPMI_GET_USE_SOCKET :
 		{
 			unsigned i;
 			struct listening_socket_s *ls = sockets_list.data;
@@ -134,17 +134,17 @@ static int fpm_sockets_hash_op(int sock, struct sockaddr *sa, char *key, int typ
 			break;
 		}
 
-		case FPM_STORE_SOCKET :			/* inherited socket */
-		case FPM_STORE_USE_SOCKET :		/* just created */
+		case FPMI_STORE_SOCKET :			/* inherited socket */
+		case FPMI_STORE_USE_SOCKET :		/* just created */
 		{
 			struct listening_socket_s *ls;
 
-			ls = fpm_array_push(&sockets_list);
+			ls = fpmi_array_push(&sockets_list);
 			if (!ls) {
 				break;
 			}
 
-			if (op == FPM_STORE_SOCKET) {
+			if (op == FPMI_STORE_SOCKET) {
 				ls->refcount = 0;
 			} else {
 				ls->refcount = 1;
@@ -160,7 +160,7 @@ static int fpm_sockets_hash_op(int sock, struct sockaddr *sa, char *key, int typ
 }
 /* }}} */
 
-static int fpm_sockets_new_listening_socket(struct fpm_worker_pool_s *wp, struct sockaddr *sa, int socklen) /* {{{ */
+static int fpmi_sockets_new_listening_socket(struct fpmi_worker_pool_s *wp, struct sockaddr *sa, int socklen) /* {{{ */
 {
 	int flags = 1;
 	int sock;
@@ -177,9 +177,9 @@ static int fpm_sockets_new_listening_socket(struct fpm_worker_pool_s *wp, struct
 		zlog(ZLOG_WARNING, "failed to change socket attribute");
 	}
 
-	if (wp->listen_address_domain == FPM_AF_UNIX) {
-		if (fpm_socket_unix_test_connect((struct sockaddr_un *)sa, socklen) == 0) {
-			zlog(ZLOG_ERROR, "An another FPM instance seems to already listen on %s", ((struct sockaddr_un *) sa)->sun_path);
+	if (wp->listen_address_domain == FPMI_AF_UNIX) {
+		if (fpmi_socket_unix_test_connect((struct sockaddr_un *)sa, socklen) == 0) {
+			zlog(ZLOG_ERROR, "An another FPMI instance seems to already listen on %s", ((struct sockaddr_un *) sa)->sun_path);
 			close(sock);
 			return -1;
 		}
@@ -189,19 +189,19 @@ static int fpm_sockets_new_listening_socket(struct fpm_worker_pool_s *wp, struct
 
 	if (0 > bind(sock, sa, socklen)) {
 		zlog(ZLOG_SYSERROR, "unable to bind listening socket for address '%s'", wp->config->listen_address);
-		if (wp->listen_address_domain == FPM_AF_UNIX) {
+		if (wp->listen_address_domain == FPMI_AF_UNIX) {
 			umask(saved_umask);
 		}
 		close(sock);
 		return -1;
 	}
 
-	if (wp->listen_address_domain == FPM_AF_UNIX) {
+	if (wp->listen_address_domain == FPMI_AF_UNIX) {
 		char *path = ((struct sockaddr_un *) sa)->sun_path;
 
 		umask(saved_umask);
 
-		if (0 > fpm_unix_set_socket_premissions(wp, path)) {
+		if (0 > fpmi_unix_set_socket_premissions(wp, path)) {
 			close(sock);
 			return -1;
 		}
@@ -217,36 +217,36 @@ static int fpm_sockets_new_listening_socket(struct fpm_worker_pool_s *wp, struct
 }
 /* }}} */
 
-static int fpm_sockets_get_listening_socket(struct fpm_worker_pool_s *wp, struct sockaddr *sa, int socklen) /* {{{ */
+static int fpmi_sockets_get_listening_socket(struct fpmi_worker_pool_s *wp, struct sockaddr *sa, int socklen) /* {{{ */
 {
 	int sock;
 
-	sock = fpm_sockets_hash_op(0, sa, 0, wp->listen_address_domain, FPM_GET_USE_SOCKET);
+	sock = fpmi_sockets_hash_op(0, sa, 0, wp->listen_address_domain, FPMI_GET_USE_SOCKET);
 	if (sock >= 0) {
 		return sock;
 	}
 
-	sock = fpm_sockets_new_listening_socket(wp, sa, socklen);
-	fpm_sockets_hash_op(sock, sa, 0, wp->listen_address_domain, FPM_STORE_USE_SOCKET);
+	sock = fpmi_sockets_new_listening_socket(wp, sa, socklen);
+	fpmi_sockets_hash_op(sock, sa, 0, wp->listen_address_domain, FPMI_STORE_USE_SOCKET);
 
 	return sock;
 }
 /* }}} */
 
-enum fpm_address_domain fpm_sockets_domain_from_address(char *address) /* {{{ */
+enum fpmi_address_domain fpmi_sockets_domain_from_address(char *address) /* {{{ */
 {
 	if (strchr(address, ':')) {
-		return FPM_AF_INET;
+		return FPMI_AF_INET;
 	}
 
 	if (strlen(address) == strspn(address, "0123456789")) {
-		return FPM_AF_INET;
+		return FPMI_AF_INET;
 	}
-	return FPM_AF_UNIX;
+	return FPMI_AF_UNIX;
 }
 /* }}} */
 
-static int fpm_socket_af_inet_socket_by_addr(struct fpm_worker_pool_s *wp, const char *addr, const char *port) /* {{{ */
+static int fpmi_socket_af_inet_socket_by_addr(struct fpmi_worker_pool_s *wp, const char *addr, const char *port) /* {{{ */
 {
 	struct addrinfo hints, *servinfo, *p;
 	char tmpbuf[INET6_ADDRSTRLEN];
@@ -263,9 +263,9 @@ static int fpm_socket_af_inet_socket_by_addr(struct fpm_worker_pool_s *wp, const
 	}
 
 	for (p = servinfo; p != NULL; p = p->ai_next) {
-		inet_ntop(p->ai_family, fpm_get_in_addr(p->ai_addr), tmpbuf, INET6_ADDRSTRLEN);
+		inet_ntop(p->ai_family, fpmi_get_in_addr(p->ai_addr), tmpbuf, INET6_ADDRSTRLEN);
 		if (sock < 0) {
-			if ((sock = fpm_sockets_get_listening_socket(wp, p->ai_addr, p->ai_addrlen)) != -1) {
+			if ((sock = fpmi_sockets_get_listening_socket(wp, p->ai_addr, p->ai_addrlen)) != -1) {
 				zlog(ZLOG_DEBUG, "Found address for %s, socket opened on %s", addr, tmpbuf);
 			}
 		} else {
@@ -279,7 +279,7 @@ static int fpm_socket_af_inet_socket_by_addr(struct fpm_worker_pool_s *wp, const
 }
 /* }}} */
 
-static int fpm_socket_af_inet_listening_socket(struct fpm_worker_pool_s *wp) /* {{{ */
+static int fpmi_socket_af_inet_listening_socket(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	char *dup_address = strdup(wp->config->listen_address);
 	char *port_str = strrchr(dup_address, ':');
@@ -312,7 +312,7 @@ static int fpm_socket_af_inet_listening_socket(struct fpm_worker_pool_s *wp) /* 
 
 	if (addr) {
 		/* Bind a specific address */
-		sock = fpm_socket_af_inet_socket_by_addr(wp, addr, port_str);
+		sock = fpmi_socket_af_inet_socket_by_addr(wp, addr, port_str);
 	} else {
 		/* Bind ANYADDR
 		 *
@@ -322,12 +322,12 @@ static int fpm_socket_af_inet_listening_socket(struct fpm_worker_pool_s *wp) /* 
 		 * If that fails (because AF_INET6 is unsupported) retry with 0.0.0.0
 		 */
 		int old_level = zlog_set_level(ZLOG_ALERT);
-		sock = fpm_socket_af_inet_socket_by_addr(wp, "::", port_str);
+		sock = fpmi_socket_af_inet_socket_by_addr(wp, "::", port_str);
 		zlog_set_level(old_level);
 
 		if (sock < 0) {
 			zlog(ZLOG_NOTICE, "Failed implicitly binding to ::, retrying with 0.0.0.0");
-			sock = fpm_socket_af_inet_socket_by_addr(wp, "0.0.0.0", port_str);
+			sock = fpmi_socket_af_inet_socket_by_addr(wp, "0.0.0.0", port_str);
 		}
 	}
 
@@ -337,25 +337,25 @@ static int fpm_socket_af_inet_listening_socket(struct fpm_worker_pool_s *wp) /* 
 }
 /* }}} */
 
-static int fpm_socket_af_unix_listening_socket(struct fpm_worker_pool_s *wp) /* {{{ */
+static int fpmi_socket_af_unix_listening_socket(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	struct sockaddr_un sa_un;
 
 	memset(&sa_un, 0, sizeof(sa_un));
 	strlcpy(sa_un.sun_path, wp->config->listen_address, sizeof(sa_un.sun_path));
 	sa_un.sun_family = AF_UNIX;
-	return fpm_sockets_get_listening_socket(wp, (struct sockaddr *) &sa_un, sizeof(struct sockaddr_un));
+	return fpmi_sockets_get_listening_socket(wp, (struct sockaddr *) &sa_un, sizeof(struct sockaddr_un));
 }
 /* }}} */
 
-int fpm_sockets_init_main() /* {{{ */
+int fpmi_sockets_init_main() /* {{{ */
 {
 	unsigned i, lq_len;
-	struct fpm_worker_pool_s *wp;
-	char *inherited = getenv("FPM_SOCKETS");
+	struct fpmi_worker_pool_s *wp;
+	char *inherited = getenv("FPMI_SOCKETS");
 	struct listening_socket_s *ls;
 
-	if (0 == fpm_array_init(&sockets_list, sizeof(struct listening_socket_s), 10)) {
+	if (0 == fpmi_array_init(&sockets_list, sizeof(struct listening_socket_s), 10)) {
 		return -1;
 	}
 
@@ -373,9 +373,9 @@ int fpm_sockets_init_main() /* {{{ */
 		if (eq) {
 			*eq = '\0';
 			fd_no = atoi(eq + 1);
-			type = fpm_sockets_domain_from_address(inherited);
+			type = fpmi_sockets_domain_from_address(inherited);
 			zlog(ZLOG_NOTICE, "using inherited socket fd=%d, \"%s\"", fd_no, inherited);
-			fpm_sockets_hash_op(fd_no, 0, inherited, type, FPM_STORE_SOCKET);
+			fpmi_sockets_hash_op(fd_no, 0, inherited, type, FPMI_STORE_SOCKET);
 		}
 
 		if (comma) {
@@ -386,17 +386,17 @@ int fpm_sockets_init_main() /* {{{ */
 	}
 
 	/* create all required sockets */
-	for (wp = fpm_worker_all_pools; wp; wp = wp->next) {
+	for (wp = fpmi_worker_all_pools; wp; wp = wp->next) {
 		switch (wp->listen_address_domain) {
-			case FPM_AF_INET :
-				wp->listening_socket = fpm_socket_af_inet_listening_socket(wp);
+			case FPMI_AF_INET :
+				wp->listening_socket = fpmi_socket_af_inet_listening_socket(wp);
 				break;
 
-			case FPM_AF_UNIX :
-				if (0 > fpm_unix_resolve_socket_premissions(wp)) {
+			case FPMI_AF_UNIX :
+				if (0 > fpmi_unix_resolve_socket_premissions(wp)) {
 					return -1;
 				}
-				wp->listening_socket = fpm_socket_af_unix_listening_socket(wp);
+				wp->listening_socket = fpmi_socket_af_unix_listening_socket(wp);
 				break;
 		}
 
@@ -404,8 +404,8 @@ int fpm_sockets_init_main() /* {{{ */
 			return -1;
 		}
 
-	if (wp->listen_address_domain == FPM_AF_INET && fpm_socket_get_listening_queue(wp->listening_socket, NULL, &lq_len) >= 0) {
-			fpm_scoreboard_update(-1, -1, -1, (int)lq_len, -1, -1, 0, FPM_SCOREBOARD_ACTION_SET, wp->scoreboard);
+	if (wp->listen_address_domain == FPMI_AF_INET && fpmi_socket_get_listening_queue(wp->listening_socket, NULL, &lq_len) >= 0) {
+			fpmi_scoreboard_update(-1, -1, -1, (int)lq_len, -1, -1, 0, FPMI_SCOREBOARD_ACTION_SET, wp->scoreboard);
 		}
 	}
 
@@ -415,31 +415,31 @@ int fpm_sockets_init_main() /* {{{ */
 	for (i = 0; i < sockets_list.used; ) {
 		if (ls->refcount == 0) {
 			close(ls->sock);
-			if (ls->type == FPM_AF_UNIX) {
+			if (ls->type == FPMI_AF_UNIX) {
 				unlink(ls->key);
 			}
 			free(ls->key);
-			fpm_array_item_remove(&sockets_list, i);
+			fpmi_array_item_remove(&sockets_list, i);
 		} else {
 			++i;
 			++ls;
 		}
 	}
 
-	if (0 > fpm_cleanup_add(FPM_CLEANUP_ALL, fpm_sockets_cleanup, 0)) {
+	if (0 > fpmi_cleanup_add(FPMI_CLEANUP_ALL, fpmi_sockets_cleanup, 0)) {
 		return -1;
 	}
 	return 0;
 }
 /* }}} */
 
-#if HAVE_FPM_LQ
+#if HAVE_FPMI_LQ
 
 #ifdef HAVE_LQ_TCP_INFO
 
 #include <netinet/tcp.h>
 
-int fpm_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
+int fpmi_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
 {
 	struct tcp_info info;
 	socklen_t len = sizeof(info);
@@ -482,7 +482,7 @@ int fpm_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
 
 #ifdef HAVE_LQ_SO_LISTENQ
 
-int fpm_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
+int fpmi_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
 {
 	int val;
 	socklen_t len = sizeof(val);
@@ -510,14 +510,14 @@ int fpm_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
 
 #else
 
-int fpm_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
+int fpmi_socket_get_listening_queue(int sock, unsigned *cur_lq, unsigned *max_lq)
 {
 	return -1;
 }
 
 #endif
 
-int fpm_socket_unix_test_connect(struct sockaddr_un *sock, size_t socklen) /* {{{ */
+int fpmi_socket_unix_test_connect(struct sockaddr_un *sock, size_t socklen) /* {{{ */
 {
 	int fd;
 

@@ -1,5 +1,5 @@
 --TEST--
-FPM: Test fastcgi_finish_request function
+FPMI: Test fastcgi_finish_request function
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -7,8 +7,8 @@ FPM: Test fastcgi_finish_request function
 
 include "include.inc";
 
-$logfile = __DIR__.'/php-fpm.log.tmp';
-$srcfile = __DIR__.'/php-fpm.tmp.php';
+$logfile = __DIR__.'/php-fpmi.log.tmp';
+$srcfile = __DIR__.'/php-fpmi.tmp.php';
 $port = 9000+PHP_INT_SIZE;
 
 $cfg = <<<EOT
@@ -31,9 +31,9 @@ echo "Test End\n";
 EOT;
 file_put_contents($srcfile, $code);
 
-$fpm = run_fpm($cfg, $tail);
-if (is_resource($fpm)) {
-    fpm_display_log($tail, 2);
+$fpmi = run_fpmi($cfg, $tail);
+if (is_resource($fpmi)) {
+    fpmi_display_log($tail, 2);
     try {
 		$req = run_request('127.0.0.1', $port, $srcfile);
 		echo strstr($req, "Test Start");
@@ -41,16 +41,16 @@ if (is_resource($fpm)) {
 	} catch (Exception $e) {
 		echo "Request error\n";
 	}
-    proc_terminate($fpm);
-    fpm_display_log($tail, -1);
+    proc_terminate($fpmi);
+    fpmi_display_log($tail, -1);
     fclose($tail);
-    proc_close($fpm);
+    proc_close($fpmi);
 }
 
 ?>
 Done
 --EXPECTF--
-[%s] NOTICE: fpm is running, pid %d
+[%s] NOTICE: fpmi is running, pid %d
 [%s] NOTICE: ready to handle connections
 Test Start
 
@@ -60,8 +60,8 @@ Request ok
 Done
 --CLEAN--
 <?php
-	$logfile = __DIR__.'/php-fpm.log.tmp';
-	$srcfile = __DIR__.'/php-fpm.tmp.php';
+	$logfile = __DIR__.'/php-fpmi.log.tmp';
+	$srcfile = __DIR__.'/php-fpmi.tmp.php';
     @unlink($logfile);
     @unlink($srcfile);
 ?>

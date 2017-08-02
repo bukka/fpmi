@@ -5,13 +5,13 @@ if (substr(PHP_OS, 0, 3) == 'WIN') {
 }
 
 
-if (!getmyuid() && !getenv('TEST_FPM_RUN_AS_ROOT')) {
+if (!getmyuid() && !getenv('TEST_FPMI_RUN_AS_ROOT')) {
 	die('Refusing to run as root');
 }
 
 include dirname(__FILE__)."/include.inc";
 
-if (!get_fpm_path()) {
-	die("skip FPM not found");
+if (!get_fpmi_path()) {
+	die("skip FPMI not found");
 }
 ?>

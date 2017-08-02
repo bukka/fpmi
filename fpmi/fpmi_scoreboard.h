@@ -1,23 +1,23 @@
 
-	/* $Id: fpm_status.h 312263 2011-06-18 17:46:16Z felipe $ */
+	/* $Id: fpmi_status.h 312263 2011-06-18 17:46:16Z felipe $ */
 	/* (c) 2009 Jerome Loyet */
 
-#ifndef FPM_SCOREBOARD_H
-#define FPM_SCOREBOARD_H 1
+#ifndef FPMI_SCOREBOARD_H
+#define FPMI_SCOREBOARD_H 1
 
 #include <sys/time.h>
 #ifdef HAVE_TIMES
 #include <sys/times.h>
 #endif
 
-#include "fpm_request.h"
-#include "fpm_worker_pool.h"
-#include "fpm_atomic.h"
+#include "fpmi_request.h"
+#include "fpmi_worker_pool.h"
+#include "fpmi_atomic.h"
 
-#define FPM_SCOREBOARD_ACTION_SET 0
-#define FPM_SCOREBOARD_ACTION_INC 1
+#define FPMI_SCOREBOARD_ACTION_SET 0
+#define FPMI_SCOREBOARD_ACTION_INC 1
 
-struct fpm_scoreboard_proc_s {
+struct fpmi_scoreboard_proc_s {
 	union {
 		atomic_t lock;
 		char dummy[16];
@@ -26,7 +26,7 @@ struct fpm_scoreboard_proc_s {
 	time_t start_epoch;
 	pid_t pid;
 	unsigned long requests;
-	enum fpm_request_stage_e request_stage;
+	enum fpmi_request_stage_e request_stage;
 	struct timeval accepted;
 	struct timeval duration;
 	time_t accepted_epoch;
@@ -46,7 +46,7 @@ struct fpm_scoreboard_proc_s {
 	size_t memory;
 };
 
-struct fpm_scoreboard_s {
+struct fpmi_scoreboard_s {
 	union {
 		atomic_t lock;
 		char dummy[16];
@@ -65,30 +65,30 @@ struct fpm_scoreboard_s {
 	unsigned int nprocs;
 	int free_proc;
 	unsigned long int slow_rq;
-	struct fpm_scoreboard_proc_s *procs[];
+	struct fpmi_scoreboard_proc_s *procs[];
 };
 
-int fpm_scoreboard_init_main();
-int fpm_scoreboard_init_child(struct fpm_worker_pool_s *wp);
+int fpmi_scoreboard_init_main();
+int fpmi_scoreboard_init_child(struct fpmi_worker_pool_s *wp);
 
-void fpm_scoreboard_update(int idle, int active, int lq, int lq_len, int requests, int max_children_reached, int slow_rq, int action, struct fpm_scoreboard_s *scoreboard);
-struct fpm_scoreboard_s *fpm_scoreboard_get();
-struct fpm_scoreboard_proc_s *fpm_scoreboard_proc_get(struct fpm_scoreboard_s *scoreboard, int child_index);
+void fpmi_scoreboard_update(int idle, int active, int lq, int lq_len, int requests, int max_children_reached, int slow_rq, int action, struct fpmi_scoreboard_s *scoreboard);
+struct fpmi_scoreboard_s *fpmi_scoreboard_get();
+struct fpmi_scoreboard_proc_s *fpmi_scoreboard_proc_get(struct fpmi_scoreboard_s *scoreboard, int child_index);
 
-struct fpm_scoreboard_s *fpm_scoreboard_acquire(struct fpm_scoreboard_s *scoreboard, int nohang);
-void fpm_scoreboard_release(struct fpm_scoreboard_s *scoreboard);
-struct fpm_scoreboard_proc_s *fpm_scoreboard_proc_acquire(struct fpm_scoreboard_s *scoreboard, int child_index, int nohang);
-void fpm_scoreboard_proc_release(struct fpm_scoreboard_proc_s *proc);
+struct fpmi_scoreboard_s *fpmi_scoreboard_acquire(struct fpmi_scoreboard_s *scoreboard, int nohang);
+void fpmi_scoreboard_release(struct fpmi_scoreboard_s *scoreboard);
+struct fpmi_scoreboard_proc_s *fpmi_scoreboard_proc_acquire(struct fpmi_scoreboard_s *scoreboard, int child_index, int nohang);
+void fpmi_scoreboard_proc_release(struct fpmi_scoreboard_proc_s *proc);
 
-void fpm_scoreboard_free(struct fpm_scoreboard_s *scoreboard);
+void fpmi_scoreboard_free(struct fpmi_scoreboard_s *scoreboard);
 
-void fpm_scoreboard_child_use(struct fpm_scoreboard_s *scoreboard, int child_index, pid_t pid);
+void fpmi_scoreboard_child_use(struct fpmi_scoreboard_s *scoreboard, int child_index, pid_t pid);
 
-void fpm_scoreboard_proc_free(struct fpm_scoreboard_s *scoreboard, int child_index);
-int fpm_scoreboard_proc_alloc(struct fpm_scoreboard_s *scoreboard, int *child_index);
+void fpmi_scoreboard_proc_free(struct fpmi_scoreboard_s *scoreboard, int child_index);
+int fpmi_scoreboard_proc_alloc(struct fpmi_scoreboard_s *scoreboard, int *child_index);
 
 #ifdef HAVE_TIMES
-float fpm_scoreboard_get_tick();
+float fpmi_scoreboard_get_tick();
 #endif
 
 #endif

@@ -1,8 +1,8 @@
 
-	/* $Id: fpm_php.c,v 1.22.2.4 2008/12/13 03:21:18 anight Exp $ */
+	/* $Id: fpmi_php.c,v 1.22.2.4 2008/12/13 03:21:18 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -15,15 +15,15 @@
 
 #include "fastcgi.h"
 
-#include "fpm.h"
-#include "fpm_php.h"
-#include "fpm_cleanup.h"
-#include "fpm_worker_pool.h"
+#include "fpmi.h"
+#include "fpmi_php.h"
+#include "fpmi_cleanup.h"
+#include "fpmi_worker_pool.h"
 #include "zlog.h"
 
 static char **limit_extensions = NULL;
 
-static int fpm_php_zend_ini_alter_master(char *name, int name_length, char *new_value, int new_value_length, int mode, int stage) /* {{{ */
+static int fpmi_php_zend_ini_alter_master(char *name, int name_length, char *new_value, int new_value_length, int mode, int stage) /* {{{ */
 {
 	zend_ini_entry *ini_entry;
 	zend_string *duplicate;
@@ -47,7 +47,7 @@ static int fpm_php_zend_ini_alter_master(char *name, int name_length, char *new_
 }
 /* }}} */
 
-static void fpm_php_disable(char *value, int (*zend_disable)(char *, size_t)) /* {{{ */
+static void fpmi_php_disable(char *value, int (*zend_disable)(char *, size_t)) /* {{{ */
 {
 	char *s = 0, *e = value;
 
@@ -76,7 +76,7 @@ static void fpm_php_disable(char *value, int (*zend_disable)(char *, size_t)) /*
 }
 /* }}} */
 
-int fpm_php_apply_defines_ex(struct key_value_s *kv, int mode) /* {{{ */
+int fpmi_php_apply_defines_ex(struct key_value_s *kv, int mode) /* {{{ */
 {
 
 	char *name = kv->key;
@@ -90,21 +90,21 @@ int fpm_php_apply_defines_ex(struct key_value_s *kv, int mode) /* {{{ */
 		return Z_TYPE(zv) == IS_TRUE;
 	}
 
-	if (fpm_php_zend_ini_alter_master(name, name_len, value, value_len, mode, PHP_INI_STAGE_ACTIVATE) == FAILURE) {
+	if (fpmi_php_zend_ini_alter_master(name, name_len, value, value_len, mode, PHP_INI_STAGE_ACTIVATE) == FAILURE) {
 		return -1;
 	}
 
 	if (!strcmp(name, "disable_functions") && *value) {
 		char *v = strdup(value);
 		PG(disable_functions) = v;
-		fpm_php_disable(v, zend_disable_function);
+		fpmi_php_disable(v, zend_disable_function);
 		return 1;
 	}
 
 	if (!strcmp(name, "disable_classes") && *value) {
 		char *v = strdup(value);
 		PG(disable_classes) = v;
-		fpm_php_disable(v, zend_disable_class);
+		fpmi_php_disable(v, zend_disable_class);
 		return 1;
 	}
 
@@ -112,18 +112,18 @@ int fpm_php_apply_defines_ex(struct key_value_s *kv, int mode) /* {{{ */
 }
 /* }}} */
 
-static int fpm_php_apply_defines(struct fpm_worker_pool_s *wp) /* {{{ */
+static int fpmi_php_apply_defines(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	struct key_value_s *kv;
 
 	for (kv = wp->config->php_values; kv; kv = kv->next) {
-		if (fpm_php_apply_defines_ex(kv, ZEND_INI_USER) == -1) {
+		if (fpmi_php_apply_defines_ex(kv, ZEND_INI_USER) == -1) {
 			zlog(ZLOG_ERROR, "Unable to set php_value '%s'", kv->key);
 		}
 	}
 
 	for (kv = wp->config->php_admin_values; kv; kv = kv->next) {
-		if (fpm_php_apply_defines_ex(kv, ZEND_INI_SYSTEM) == -1) {
+		if (fpmi_php_apply_defines_ex(kv, ZEND_INI_SYSTEM) == -1) {
 			zlog(ZLOG_ERROR, "Unable to set php_admin_value '%s'", kv->key);
 		}
 	}
@@ -132,9 +132,9 @@ static int fpm_php_apply_defines(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-static int fpm_php_set_allowed_clients(struct fpm_worker_pool_s *wp) /* {{{ */
+static int fpmi_php_set_allowed_clients(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
-	if (wp->listen_address_domain == FPM_AF_INET) {
+	if (wp->listen_address_domain == FPMI_AF_INET) {
 		fcgi_set_allowed_clients(wp->config->listen_allowed_clients);
 	}
 	return 0;
@@ -142,7 +142,7 @@ static int fpm_php_set_allowed_clients(struct fpm_worker_pool_s *wp) /* {{{ */
 /* }}} */
 
 #if 0 /* Comment out this non used function. It could be used later. */
-static int fpm_php_set_fcgi_mgmt_vars(struct fpm_worker_pool_s *wp) /* {{{ */
+static int fpmi_php_set_fcgi_mgmt_vars(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	char max_workers[10 + 1]; /* 4294967295 */
 	int len;
@@ -156,68 +156,68 @@ static int fpm_php_set_fcgi_mgmt_vars(struct fpm_worker_pool_s *wp) /* {{{ */
 /* }}} */
 #endif
 
-char *fpm_php_script_filename(void) /* {{{ */
+char *fpmi_php_script_filename(void) /* {{{ */
 {
 	return SG(request_info).path_translated;
 }
 /* }}} */
 
-char *fpm_php_request_uri(void) /* {{{ */
+char *fpmi_php_request_uri(void) /* {{{ */
 {
 	return (char *) SG(request_info).request_uri;
 }
 /* }}} */
 
-char *fpm_php_request_method(void) /* {{{ */
+char *fpmi_php_request_method(void) /* {{{ */
 {
 	return (char *) SG(request_info).request_method;
 }
 /* }}} */
 
-char *fpm_php_query_string(void) /* {{{ */
+char *fpmi_php_query_string(void) /* {{{ */
 {
 	return SG(request_info).query_string;
 }
 /* }}} */
 
-char *fpm_php_auth_user(void) /* {{{ */
+char *fpmi_php_auth_user(void) /* {{{ */
 {
 	return SG(request_info).auth_user;
 }
 /* }}} */
 
-size_t fpm_php_content_length(void) /* {{{ */
+size_t fpmi_php_content_length(void) /* {{{ */
 {
 	return SG(request_info).content_length;
 }
 /* }}} */
 
-static void fpm_php_cleanup(int which, void *arg) /* {{{ */
+static void fpmi_php_cleanup(int which, void *arg) /* {{{ */
 {
 	php_module_shutdown();
 	sapi_shutdown();
 }
 /* }}} */
 
-void fpm_php_soft_quit() /* {{{ */
+void fpmi_php_soft_quit() /* {{{ */
 {
 	fcgi_terminate();
 }
 /* }}} */
 
-int fpm_php_init_main() /* {{{ */
+int fpmi_php_init_main() /* {{{ */
 {
-	if (0 > fpm_cleanup_add(FPM_CLEANUP_PARENT, fpm_php_cleanup, 0)) {
+	if (0 > fpmi_cleanup_add(FPMI_CLEANUP_PARENT, fpmi_php_cleanup, 0)) {
 		return -1;
 	}
 	return 0;
 }
 /* }}} */
 
-int fpm_php_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
+int fpmi_php_init_child(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
-	if (0 > fpm_php_apply_defines(wp) ||
-		0 > fpm_php_set_allowed_clients(wp)) {
+	if (0 > fpmi_php_apply_defines(wp) ||
+		0 > fpmi_php_set_allowed_clients(wp)) {
 		return -1;
 	}
 
@@ -228,7 +228,7 @@ int fpm_php_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-int fpm_php_limit_extensions(char *path) /* {{{ */
+int fpmi_php_limit_extensions(char *path) /* {{{ */
 {
 	char **p;
 	size_t path_len;
@@ -256,7 +256,7 @@ int fpm_php_limit_extensions(char *path) /* {{{ */
 }
 /* }}} */
 
-char* fpm_php_get_string_from_table(zend_string *table, char *key) /* {{{ */
+char* fpmi_php_get_string_from_table(zend_string *table, char *key) /* {{{ */
 {
 	zval *data, *tmp;
 	zend_string *str;

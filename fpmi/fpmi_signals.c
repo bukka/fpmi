@@ -1,8 +1,8 @@
 
-	/* $Id: fpm_signals.c,v 1.24 2008/08/26 15:09:15 anight Exp $ */
+	/* $Id: fpmi_signals.c,v 1.24 2008/08/26 15:09:15 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #include <signal.h>
 #include <stdio.h>
@@ -14,15 +14,15 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include "fpm.h"
-#include "fpm_signals.h"
-#include "fpm_sockets.h"
-#include "fpm_php.h"
+#include "fpmi.h"
+#include "fpmi_signals.h"
+#include "fpmi_sockets.h"
+#include "fpmi_php.h"
 #include "zlog.h"
 
 static int sp[2];
 
-const char *fpm_signal_names[NSIG + 1] = {
+const char *fpmi_signal_names[NSIG + 1] = {
 #ifdef SIGHUP
 	[SIGHUP] 		= "SIGHUP",
 #endif
@@ -148,7 +148,7 @@ static void sig_soft_quit(int signo) /* {{{ */
 	if (0 > socket(AF_UNIX, SOCK_STREAM, 0)) {
 		zlog(ZLOG_WARNING, "failed to create a new socket");
 	}
-	fpm_php_soft_quit();
+	fpmi_php_soft_quit();
 	errno = saved_errno;
 }
 /* }}} */
@@ -166,7 +166,7 @@ static void sig_handler(int signo) /* {{{ */
 	char s;
 	int saved_errno;
 
-	if (fpm_globals.parent_pid != getpid()) {
+	if (fpmi_globals.parent_pid != getpid()) {
 		/* prevent a signal race condition when child process
 			have not set up it's own signal handler yet */
 		return;
@@ -179,7 +179,7 @@ static void sig_handler(int signo) /* {{{ */
 }
 /* }}} */
 
-int fpm_signals_init_main() /* {{{ */
+int fpmi_signals_init_main() /* {{{ */
 {
 	struct sigaction act;
 
@@ -216,7 +216,7 @@ int fpm_signals_init_main() /* {{{ */
 }
 /* }}} */
 
-int fpm_signals_init_child() /* {{{ */
+int fpmi_signals_init_child() /* {{{ */
 {
 	struct sigaction act, act_dfl;
 
@@ -247,7 +247,7 @@ int fpm_signals_init_child() /* {{{ */
 }
 /* }}} */
 
-int fpm_signals_get_fd() /* {{{ */
+int fpmi_signals_get_fd() /* {{{ */
 {
 	return sp[0];
 }

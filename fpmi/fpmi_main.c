@@ -101,12 +101,12 @@ int __riscosify_control = __RISCOSIFY_STRICT_UNIX_SPECS;
 #include "fastcgi.h"
 
 #include <php_config.h>
-#include "fpm.h"
-#include "fpm_request.h"
-#include "fpm_status.h"
-#include "fpm_conf.h"
-#include "fpm_php.h"
-#include "fpm_log.h"
+#include "fpmi.h"
+#include "fpmi_request.h"
+#include "fpmi_status.h"
+#include "fpmi_conf.h"
+#include "fpmi_php.h"
+#include "fpmi_log.h"
 #include "zlog.h"
 
 #ifndef PHP_WIN32
@@ -126,7 +126,7 @@ static int parent = 1;
 #endif
 
 static int request_body_fd;
-static int fpm_is_running = 0;
+static int fpmi_is_running = 0;
 
 static char *sapi_cgibin_getenv(char *name, size_t name_len);
 static void fastcgi_ini_parser(zval *arg1, zval *arg2, zval *arg3, int callback_type, void *arg);
@@ -151,7 +151,7 @@ static const opt_struct OPTIONS[] = {
 	{'n', 0, "no-php-ini"},
 	{'?', 0, "usage"},/* help alias (both '?' and 'usage') */
 	{'v', 0, "version"},
-	{'y', 1, "fpm-config"},
+	{'y', 1, "fpmi-config"},
 	{'t', 0, "test"},
 	{'p', 1, "prefix"},
 	{'g', 1, "pid"},
@@ -172,7 +172,7 @@ typedef struct _php_cgi_globals_struct {
 	char *redirect_status_env;
 	HashTable user_config_cache;
 	char *error_header;
-	char *fpm_config;
+	char *fpmi_config;
 } php_cgi_globals_struct;
 
 /* {{{ user_config_cache
@@ -285,7 +285,7 @@ static inline size_t sapi_cgibin_single_write(const char *str, uint32_t str_leng
 	ssize_t ret;
 
 	/* sapi has started which means everyhting must be send through fcgi */
-	if (fpm_is_running) {
+	if (fpmi_is_running) {
 		fcgi_request *request = (fcgi_request*) SG(server_context);
 		ret = fcgi_write(request, FCGI_STDOUT, str, str_length);
 		if (ret <= 0) {
@@ -329,8 +329,8 @@ static size_t sapi_cgibin_ub_write(const char *str, size_t str_length) /* {{{ */
 
 static void sapi_cgibin_flush(void *server_context) /* {{{ */
 {
-	/* fpm has started, let use fcgi instead of stdout */
-	if (fpm_is_running) {
+	/* fpmi has started, let use fcgi instead of stdout */
+	if (fpmi_is_running) {
 		fcgi_request *request = (fcgi_request*) server_context;
 		if (
 #ifndef PHP_WIN32
@@ -342,7 +342,7 @@ static void sapi_cgibin_flush(void *server_context) /* {{{ */
 		return;
 	}
 
-	/* fpm has not started yet, let use stdout instead of fcgi */
+	/* fpmi has not started yet, let use stdout instead of fcgi */
 	if (fflush(stdout) == EOF) {
 		php_handle_aborted_connection();
 	}
@@ -459,7 +459,7 @@ static int sapi_cgi_send_headers(sapi_headers_struct *sapi_headers) /* {{{ */
 #endif
 
 #ifndef HAVE_ATTRIBUTE_WEAK
-static void fpm_fcgi_log(int type, const char *fmt, ...) /* {{{ */
+static void fpmi_fcgi_log(int type, const char *fmt, ...) /* {{{ */
 #else
 void fcgi_log(int type, const char *fmt, ...)
 #endif
@@ -513,13 +513,13 @@ static size_t sapi_cgi_read_post(char *buffer, size_t count_bytes) /* {{{ */
 
 static char *sapi_cgibin_getenv(char *name, size_t name_len) /* {{{ */
 {
-	/* if fpm has started, use fcgi env */
-	if (fpm_is_running) {
+	/* if fpmi has started, use fcgi env */
+	if (fpmi_is_running) {
 		fcgi_request *request = (fcgi_request*) SG(server_context);
 		return fcgi_getenv(request, name, name_len);
 	}
 
-	/* if fpm has not started yet, use std env */
+	/* if fpmi has not started yet, use std env */
 	return getenv(name);
 }
 /* }}} */
@@ -845,8 +845,8 @@ static int php_cgi_startup(sapi_module_struct *sapi_module) /* {{{ */
 /* {{{ sapi_module_struct cgi_sapi_module
  */
 static sapi_module_struct cgi_sapi_module = {
-	"fpm-fcgi",						/* name */
-	"FPM/FastCGI",					/* pretty name */
+	"fpmi-fcgi",						/* name */
+	"FPMI/FastCGI",					/* pretty name */
 
 	php_cgi_startup,				/* startup */
 	php_module_shutdown_wrapper,	/* shutdown */
@@ -903,9 +903,9 @@ static void php_cgi_usage(char *argv0)
 				"                   Specify alternative prefix path to FastCGI process manager (default: %s).\n"
 				"  -g, --pid <file>\n"
 				"                   Specify the PID file location.\n"
-				"  -y, --fpm-config <file>\n"
+				"  -y, --fpmi-config <file>\n"
 				"                   Specify alternative path to FastCGI process manager config file.\n"
-				"  -t, --test       Test FPM configuration and exit\n"
+				"  -t, --test       Test FPMI configuration and exit\n"
 				"  -D, --daemonize  force to run in background, and ignore daemonize option from config file\n"
 				"  -F, --nodaemonize\n"
 				"                   force to stay in foreground, and ignore daemonize option from config file\n"
@@ -1415,11 +1415,11 @@ static void init_request_info(void)
 }
 /* }}} */
 
-static fcgi_request *fpm_init_request(int listen_fd) /* {{{ */ {
+static fcgi_request *fpmi_init_request(int listen_fd) /* {{{ */ {
 	fcgi_request *req = fcgi_init_request(listen_fd,
-		fpm_request_accepting,
-		fpm_request_reading_headers,
-		fpm_request_finished);
+		fpmi_request_accepting,
+		fpmi_request_reading_headers,
+		fpmi_request_finished);
 	return req;
 }
 /* }}} */
@@ -1457,7 +1457,7 @@ static void fastcgi_ini_parser(zval *arg1, zval *arg2, zval *arg3, int callback_
 	kv.key = key;
 	kv.value = value;
 	kv.next = NULL;
-	if (fpm_php_apply_defines_ex(&kv, *mode) == -1) {
+	if (fpmi_php_apply_defines_ex(&kv, *mode) == -1) {
 		zlog(ZLOG_ERROR, "Passing INI directive through FastCGI: unable to set '%s'", key);
 	}
 }
@@ -1472,7 +1472,7 @@ PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("cgi.discard_path",        "0",  PHP_INI_SYSTEM, OnUpdateBool,   discard_path, php_cgi_globals_struct, php_cgi_globals)
 	STD_PHP_INI_ENTRY("fastcgi.logging",         "1",  PHP_INI_SYSTEM, OnUpdateBool,   fcgi_logging, php_cgi_globals_struct, php_cgi_globals)
 	STD_PHP_INI_ENTRY("fastcgi.error_header",    NULL, PHP_INI_SYSTEM, OnUpdateString, error_header, php_cgi_globals_struct, php_cgi_globals)
-	STD_PHP_INI_ENTRY("fpm.config",    NULL, PHP_INI_SYSTEM, OnUpdateString, fpm_config, php_cgi_globals_struct, php_cgi_globals)
+	STD_PHP_INI_ENTRY("fpmi.config",    NULL, PHP_INI_SYSTEM, OnUpdateString, fpmi_config, php_cgi_globals_struct, php_cgi_globals)
 PHP_INI_END()
 
 /* {{{ php_cgi_globals_ctor
@@ -1488,7 +1488,7 @@ static void php_cgi_globals_ctor(php_cgi_globals_struct *php_cgi_globals)
 	php_cgi_globals->fcgi_logging = 1;
 	zend_hash_init(&php_cgi_globals->user_config_cache, 0, NULL, user_config_cache_entry_dtor, 1);
 	php_cgi_globals->error_header = NULL;
-	php_cgi_globals->fpm_config = NULL;
+	php_cgi_globals->fpmi_config = NULL;
 }
 /* }}} */
 
@@ -1522,7 +1522,7 @@ static PHP_MSHUTDOWN_FUNCTION(cgi)
 static PHP_MINFO_FUNCTION(cgi)
 {
 	php_info_print_table_start();
-	php_info_print_table_row(2, "php-fpm", "active");
+	php_info_print_table_row(2, "php-fpmi", "active");
 	php_info_print_table_end();
 
 	DISPLAY_INI_ENTRIES();
@@ -1569,7 +1569,7 @@ static zend_module_entry cgi_module_entry = {
  */
 int main(int argc, char *argv[])
 {
-	int exit_status = FPM_EXIT_OK;
+	int exit_status = FPMI_EXIT_OK;
 	int cgi = 0, c, use_extended_info = 0;
 	zend_file_handle file_handle;
 
@@ -1587,9 +1587,9 @@ int main(int argc, char *argv[])
 	int requests = 0;
 	int fcgi_fd = 0;
 	fcgi_request *request;
-	char *fpm_config = NULL;
-	char *fpm_prefix = NULL;
-	char *fpm_pid = NULL;
+	char *fpmi_config = NULL;
+	char *fpmi_prefix = NULL;
+	char *fpmi_pid = NULL;
 	int test_conf = 0;
 	int force_daemon = -1;
 	int force_stderr = 0;
@@ -1619,7 +1619,7 @@ int main(int argc, char *argv[])
 	cgi_sapi_module.php_ini_ignore_cwd = 1;
 
 #ifndef HAVE_ATTRIBUTE_WEAK
-	fcgi_set_logger(fpm_fcgi_log);
+	fcgi_set_logger(fpmi_fcgi_log);
 #endif
 
 	fcgi_init();
@@ -1677,15 +1677,15 @@ int main(int argc, char *argv[])
 			}
 
 			case 'y':
-				fpm_config = php_optarg;
+				fpmi_config = php_optarg;
 				break;
 
 			case 'p':
-				fpm_prefix = php_optarg;
+				fpmi_prefix = php_optarg;
 				break;
 
 			case 'g':
-				fpm_pid = php_optarg;
+				fpmi_pid = php_optarg;
 				break;
 
 			case 'e': /* enable extended info output */
@@ -1708,7 +1708,7 @@ int main(int argc, char *argv[])
 				php_output_end_all();
 				php_output_deactivate();
 				fcgi_shutdown();
-				exit_status = FPM_EXIT_OK;
+				exit_status = FPMI_EXIT_OK;
 				goto out;
 
 			case 'i': /* php info & quit */
@@ -1741,7 +1741,7 @@ int main(int argc, char *argv[])
 				php_output_end_all();
 				php_output_deactivate();
 				fcgi_shutdown();
-				exit_status = (c == 'h') ? FPM_EXIT_OK : FPM_EXIT_USAGE;
+				exit_status = (c == 'h') ? FPMI_EXIT_OK : FPMI_EXIT_USAGE;
 				goto out;
 
 			case 'v': /* show php version & quit */
@@ -1749,7 +1749,7 @@ int main(int argc, char *argv[])
 				if (php_request_startup() == FAILURE) {
 					SG(server_context) = NULL;
 					php_module_shutdown();
-					return FPM_EXIT_SOFTWARE;
+					return FPMI_EXIT_SOFTWARE;
 				}
 				SG(headers_sent) = 1;
 				SG(request_info).no_headers = 1;
@@ -1761,7 +1761,7 @@ int main(int argc, char *argv[])
 #endif
 				php_request_shutdown((void *) 0);
 				fcgi_shutdown();
-				exit_status = FPM_EXIT_OK;
+				exit_status = FPMI_EXIT_OK;
 				goto out;
 		}
 	}
@@ -1772,14 +1772,14 @@ int main(int argc, char *argv[])
 		if (php_request_startup() == FAILURE) {
 			SG(server_context) = NULL;
 			php_module_shutdown();
-			return FPM_EXIT_SOFTWARE;
+			return FPMI_EXIT_SOFTWARE;
 		}
 		SG(headers_sent) = 1;
 		SG(request_info).no_headers = 1;
 		php_print_info(0xFFFFFFFF);
 		php_request_shutdown((void *) 0);
 		fcgi_shutdown();
-		exit_status = FPM_EXIT_OK;
+		exit_status = FPMI_EXIT_OK;
 		goto out;
 	}
 
@@ -1792,7 +1792,7 @@ int main(int argc, char *argv[])
 		php_output_end_all();
 		php_output_deactivate();
 		fcgi_shutdown();
-		exit_status = FPM_EXIT_USAGE;
+		exit_status = FPMI_EXIT_USAGE;
 		goto out;
 	}
 
@@ -1811,7 +1811,7 @@ int main(int argc, char *argv[])
 #ifdef ZTS
 		tsrm_shutdown();
 #endif
-		return FPM_EXIT_SOFTWARE;
+		return FPMI_EXIT_SOFTWARE;
 	}
 
 	if (use_extended_info) {
@@ -1854,30 +1854,30 @@ consult the installation file that came with this distribution, or visit \n\
 			 */
 			tsrm_shutdown();
 #endif
-			return FPM_EXIT_SOFTWARE;
+			return FPMI_EXIT_SOFTWARE;
 		}
 	}
 
-	if (0 > fpm_init(argc, argv, fpm_config ? fpm_config : CGIG(fpm_config), fpm_prefix, fpm_pid, test_conf, php_allow_to_run_as_root, force_daemon, force_stderr)) {
+	if (0 > fpmi_init(argc, argv, fpmi_config ? fpmi_config : CGIG(fpmi_config), fpmi_prefix, fpmi_pid, test_conf, php_allow_to_run_as_root, force_daemon, force_stderr)) {
 
-		if (fpm_globals.send_config_pipe[1]) {
+		if (fpmi_globals.send_config_pipe[1]) {
 			int writeval = 0;
-			zlog(ZLOG_DEBUG, "Sending \"0\" (error) to parent via fd=%d", fpm_globals.send_config_pipe[1]);
-			zend_quiet_write(fpm_globals.send_config_pipe[1], &writeval, sizeof(writeval));
-			close(fpm_globals.send_config_pipe[1]);
+			zlog(ZLOG_DEBUG, "Sending \"0\" (error) to parent via fd=%d", fpmi_globals.send_config_pipe[1]);
+			zend_quiet_write(fpmi_globals.send_config_pipe[1], &writeval, sizeof(writeval));
+			close(fpmi_globals.send_config_pipe[1]);
 		}
-		return FPM_EXIT_CONFIG;
+		return FPMI_EXIT_CONFIG;
 	}
 
-	if (fpm_globals.send_config_pipe[1]) {
+	if (fpmi_globals.send_config_pipe[1]) {
 		int writeval = 1;
-		zlog(ZLOG_DEBUG, "Sending \"1\" (OK) to parent via fd=%d", fpm_globals.send_config_pipe[1]);
-		zend_quiet_write(fpm_globals.send_config_pipe[1], &writeval, sizeof(writeval));
-		close(fpm_globals.send_config_pipe[1]);
+		zlog(ZLOG_DEBUG, "Sending \"1\" (OK) to parent via fd=%d", fpmi_globals.send_config_pipe[1]);
+		zend_quiet_write(fpmi_globals.send_config_pipe[1], &writeval, sizeof(writeval));
+		close(fpmi_globals.send_config_pipe[1]);
 	}
-	fpm_is_running = 1;
+	fpmi_is_running = 1;
 
-	fcgi_fd = fpm_run(&max_requests);
+	fcgi_fd = fpmi_run(&max_requests);
 	parent = 0;
 
 	/* onced forked tell zlog to also send messages through sapi_cgi_log_fastcgi() */
@@ -1888,7 +1888,7 @@ consult the installation file that came with this distribution, or visit \n\
 	php_import_environment_variables = cgi_php_import_environment_variables;
 
 	/* library is already initialized, now init our request */
-	request = fpm_init_request(fcgi_fd);
+	request = fpmi_init_request(fcgi_fd);
 
 	zend_first_try {
 		while (EXPECTED(fcgi_accept_request(request) >= 0)) {
@@ -1897,7 +1897,7 @@ consult the installation file that came with this distribution, or visit \n\
 			SG(server_context) = (void *) request;
 			init_request_info();
 
-			fpm_request_info();
+			fpmi_request_info();
 
 			/* request startup only after we've done all we can to
 			 *            get path_translated */
@@ -1905,7 +1905,7 @@ consult the installation file that came with this distribution, or visit \n\
 				fcgi_finish_request(request, 1);
 				SG(server_context) = NULL;
 				php_module_shutdown();
-				return FPM_EXIT_SOFTWARE;
+				return FPMI_EXIT_SOFTWARE;
 			}
 
 			/* check if request_method has been sent.
@@ -1914,7 +1914,7 @@ consult the installation file that came with this distribution, or visit \n\
 				goto fastcgi_request_done;
 			}
 
-			if (UNEXPECTED(fpm_status_handle_request())) {
+			if (UNEXPECTED(fpmi_status_handle_request())) {
 				goto fastcgi_request_done;
 			}
 
@@ -1929,7 +1929,7 @@ consult the installation file that came with this distribution, or visit \n\
 				goto fastcgi_request_done;
 			}
 
-			if (UNEXPECTED(fpm_php_limit_extensions(SG(request_info).path_translated))) {
+			if (UNEXPECTED(fpmi_php_limit_extensions(SG(request_info).path_translated))) {
 				SG(sapi_headers).http_response_code = 403;
 				PUTS("Access denied.\n");
 				goto fastcgi_request_done;
@@ -1961,7 +1961,7 @@ consult the installation file that came with this distribution, or visit \n\
 				goto fastcgi_request_done;
 			}
 
-			fpm_request_executing();
+			fpmi_request_executing();
 
 			php_execute_script(&file_handle);
 
@@ -1985,8 +1985,8 @@ fastcgi_request_done:
 				}
 			}
 
-			fpm_request_end();
-			fpm_log_write(NULL);
+			fpmi_request_end();
+			fpmi_log_write(NULL);
 
 			efree(SG(request_info).path_translated);
 			SG(request_info).path_translated = NULL;
@@ -2011,7 +2011,7 @@ fastcgi_request_done:
 			free(cgi_sapi_module.ini_entries);
 		}
 	} zend_catch {
-		exit_status = FPM_EXIT_SOFTWARE;
+		exit_status = FPMI_EXIT_SOFTWARE;
 	} zend_end_try();
 
 out:

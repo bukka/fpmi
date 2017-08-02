@@ -1,8 +1,8 @@
 
-	/* $Id: fpm_env.c,v 1.15 2008/09/18 23:19:59 anight Exp $ */
+	/* $Id: fpmi_env.c,v 1.15 2008/09/18 23:19:59 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
 #ifdef HAVE_ALLOCA_H
 #include <alloca.h>
@@ -11,13 +11,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "fpm_env.h"
-#include "fpm.h"
+#include "fpmi_env.h"
+#include "fpmi.h"
 
 #ifndef HAVE_SETPROCTITLE
 #ifdef __linux__
-static char **fpm_env_argv = NULL;
-static size_t fpm_env_argv_len = 0;
+static char **fpmi_env_argv = NULL;
+static size_t fpmi_env_argv_len = 0;
 #endif
 #endif
 
@@ -118,29 +118,29 @@ static char * nvmatch(char *s1, char *s2) /* {{{ */
 /* }}} */
 #endif
 
-void fpm_env_setproctitle(char *title) /* {{{ */
+void fpmi_env_setproctitle(char *title) /* {{{ */
 {
 #ifdef HAVE_SETPROCTITLE
 	setproctitle("%s", title);
 #else
 #ifdef __linux__
-	if (fpm_env_argv != NULL && fpm_env_argv_len > strlen(SETPROCTITLE_PREFIX) + 3) {
-		memset(fpm_env_argv[0], 0, fpm_env_argv_len);
-		strncpy(fpm_env_argv[0], SETPROCTITLE_PREFIX, fpm_env_argv_len - 2);
-		strncpy(fpm_env_argv[0] + strlen(SETPROCTITLE_PREFIX), title, fpm_env_argv_len - strlen(SETPROCTITLE_PREFIX) - 2);
-		fpm_env_argv[1] = NULL;
+	if (fpmi_env_argv != NULL && fpmi_env_argv_len > strlen(SETPROCTITLE_PREFIX) + 3) {
+		memset(fpmi_env_argv[0], 0, fpmi_env_argv_len);
+		strncpy(fpmi_env_argv[0], SETPROCTITLE_PREFIX, fpmi_env_argv_len - 2);
+		strncpy(fpmi_env_argv[0] + strlen(SETPROCTITLE_PREFIX), title, fpmi_env_argv_len - strlen(SETPROCTITLE_PREFIX) - 2);
+		fpmi_env_argv[1] = NULL;
 	}
 #endif
 #endif
 }
 /* }}} */
 
-int fpm_env_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
+int fpmi_env_init_child(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	struct key_value_s *kv;
 	char *title;
 	spprintf(&title, 0, "pool %s", wp->config->name);
-	fpm_env_setproctitle(title);
+	fpmi_env_setproctitle(title);
 	efree(title);
 
 	if (wp->config->clear_env) {
@@ -163,7 +163,7 @@ int fpm_env_init_child(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-static int fpm_env_conf_wp(struct fpm_worker_pool_s *wp) /* {{{ */
+static int fpmi_env_conf_wp(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	struct key_value_s *kv;
 
@@ -196,16 +196,16 @@ static int fpm_env_conf_wp(struct fpm_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
-int fpm_env_init_main() /* {{{ */
+int fpmi_env_init_main() /* {{{ */
 {
-	struct fpm_worker_pool_s *wp;
+	struct fpmi_worker_pool_s *wp;
 	int i;
 	char *first = NULL;
 	char *last = NULL;
 	char *title;
 
-	for (wp = fpm_worker_all_pools; wp; wp = wp->next) {
-		if (0 > fpm_env_conf_wp(wp)) {
+	for (wp = fpmi_worker_all_pools; wp; wp = wp->next) {
+		if (0 > fpmi_env_conf_wp(wp)) {
 			return -1;
 		}
 	}
@@ -224,12 +224,12 @@ int fpm_env_init_main() /* {{{ */
 	 * our process title.
 	 */
 
-	for (i = 0; i < fpm_globals.argc; i++) {
+	for (i = 0; i < fpmi_globals.argc; i++) {
 		if (first == NULL) {
-			first = fpm_globals.argv[i];
+			first = fpmi_globals.argv[i];
 		}
-		if (last == NULL || fpm_globals.argv[i] == last + 1) {
-			last = fpm_globals.argv[i] + strlen(fpm_globals.argv[i]);
+		if (last == NULL || fpmi_globals.argv[i] == last + 1) {
+			last = fpmi_globals.argv[i] + strlen(fpmi_globals.argv[i]);
 		}
 	}
 	if (environ) {
@@ -246,8 +246,8 @@ int fpm_env_init_main() /* {{{ */
 		return 0;
 	}
 
-	fpm_env_argv_len = last - first;
-	fpm_env_argv = fpm_globals.argv;
+	fpmi_env_argv_len = last - first;
+	fpmi_env_argv = fpmi_globals.argv;
 	if (environ != NULL) {
 		char **new_environ;
 		unsigned int env_nb = 0U;
@@ -269,8 +269,8 @@ int fpm_env_init_main() /* {{{ */
 #endif
 #endif
 
-	spprintf(&title, 0, "master process (%s)", fpm_globals.config);
-	fpm_env_setproctitle(title);
+	spprintf(&title, 0, "master process (%s)", fpmi_globals.config);
+	fpmi_env_setproctitle(title);
 	efree(title);
 	return 0;
 }

@@ -1,66 +1,66 @@
 
-	/* $Id: fpm_request.c,v 1.9.2.1 2008/11/15 00:57:24 anight Exp $ */
+	/* $Id: fpmi_request.c,v 1.9.2.1 2008/11/15 00:57:24 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 #ifdef HAVE_TIMES
 #include <sys/times.h>
 #endif
 
-#include "fpm_config.h"
+#include "fpmi_config.h"
 
-#include "fpm.h"
-#include "fpm_php.h"
-#include "fpm_str.h"
-#include "fpm_clock.h"
-#include "fpm_conf.h"
-#include "fpm_trace.h"
-#include "fpm_php_trace.h"
-#include "fpm_process_ctl.h"
-#include "fpm_children.h"
-#include "fpm_scoreboard.h"
-#include "fpm_status.h"
-#include "fpm_request.h"
-#include "fpm_log.h"
+#include "fpmi.h"
+#include "fpmi_php.h"
+#include "fpmi_str.h"
+#include "fpmi_clock.h"
+#include "fpmi_conf.h"
+#include "fpmi_trace.h"
+#include "fpmi_php_trace.h"
+#include "fpmi_process_ctl.h"
+#include "fpmi_children.h"
+#include "fpmi_scoreboard.h"
+#include "fpmi_status.h"
+#include "fpmi_request.h"
+#include "fpmi_log.h"
 
 #include "zlog.h"
 
 static const char *requests_stages[] = {
-	[FPM_REQUEST_ACCEPTING]       = "Idle",
-	[FPM_REQUEST_READING_HEADERS] = "Reading headers",
-	[FPM_REQUEST_INFO]            = "Getting request informations",
-	[FPM_REQUEST_EXECUTING]       = "Running",
-	[FPM_REQUEST_END]             = "Ending",
-	[FPM_REQUEST_FINISHED]        = "Finishing",
+	[FPMI_REQUEST_ACCEPTING]       = "Idle",
+	[FPMI_REQUEST_READING_HEADERS] = "Reading headers",
+	[FPMI_REQUEST_INFO]            = "Getting request informations",
+	[FPMI_REQUEST_EXECUTING]       = "Running",
+	[FPMI_REQUEST_END]             = "Ending",
+	[FPMI_REQUEST_FINISHED]        = "Finishing",
 };
 
-const char *fpm_request_get_stage_name(int stage) {
+const char *fpmi_request_get_stage_name(int stage) {
 	return requests_stages[stage];
 }
 
-void fpm_request_accepting() /* {{{ */
+void fpmi_request_accepting() /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
+	struct fpmi_scoreboard_proc_s *proc;
 	struct timeval now;
 
-	fpm_clock_get(&now);
+	fpmi_clock_get(&now);
 
-	proc = fpm_scoreboard_proc_acquire(NULL, -1, 0);
+	proc = fpmi_scoreboard_proc_acquire(NULL, -1, 0);
 	if (proc == NULL) {
 		zlog(ZLOG_WARNING, "failed to acquire proc scoreboard");
 		return;
 	}
 
-	proc->request_stage = FPM_REQUEST_ACCEPTING;
+	proc->request_stage = FPMI_REQUEST_ACCEPTING;
 	proc->tv = now;
-	fpm_scoreboard_proc_release(proc);
+	fpmi_scoreboard_proc_release(proc);
 
 	/* idle++, active-- */
-	fpm_scoreboard_update(1, -1, 0, 0, 0, 0, 0, FPM_SCOREBOARD_ACTION_INC, NULL);
+	fpmi_scoreboard_update(1, -1, 0, 0, 0, 0, 0, FPMI_SCOREBOARD_ACTION_INC, NULL);
 }
 /* }}} */
 
-void fpm_request_reading_headers() /* {{{ */
+void fpmi_request_reading_headers() /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
+	struct fpmi_scoreboard_proc_s *proc;
 
 	struct timeval now;
 	clock_t now_epoch;
@@ -68,19 +68,19 @@ void fpm_request_reading_headers() /* {{{ */
 	struct tms cpu;
 #endif
 
-	fpm_clock_get(&now);
+	fpmi_clock_get(&now);
 	now_epoch = time(NULL);
 #ifdef HAVE_TIMES
 	times(&cpu);
 #endif
 
-	proc = fpm_scoreboard_proc_acquire(NULL, -1, 0);
+	proc = fpmi_scoreboard_proc_acquire(NULL, -1, 0);
 	if (proc == NULL) {
 		zlog(ZLOG_WARNING, "failed to acquire proc scoreboard");
 		return;
 	}
 
-	proc->request_stage = FPM_REQUEST_READING_HEADERS;
+	proc->request_stage = FPMI_REQUEST_READING_HEADERS;
 	proc->tv = now;
 	proc->accepted = now;
 	proc->accepted_epoch = now_epoch;
@@ -94,33 +94,33 @@ void fpm_request_reading_headers() /* {{{ */
 	proc->query_string[0] = '\0';
 	proc->auth_user[0] = '\0';
 	proc->content_length = 0;
-	fpm_scoreboard_proc_release(proc);
+	fpmi_scoreboard_proc_release(proc);
 
 	/* idle--, active++, request++ */
-	fpm_scoreboard_update(-1, 1, 0, 0, 1, 0, 0, FPM_SCOREBOARD_ACTION_INC, NULL);
+	fpmi_scoreboard_update(-1, 1, 0, 0, 1, 0, 0, FPMI_SCOREBOARD_ACTION_INC, NULL);
 }
 /* }}} */
 
-void fpm_request_info() /* {{{ */
+void fpmi_request_info() /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
-	char *request_uri = fpm_php_request_uri();
-	char *request_method = fpm_php_request_method();
-	char *script_filename = fpm_php_script_filename();
-	char *query_string = fpm_php_query_string();
-	char *auth_user = fpm_php_auth_user();
-	size_t content_length = fpm_php_content_length();
+	struct fpmi_scoreboard_proc_s *proc;
+	char *request_uri = fpmi_php_request_uri();
+	char *request_method = fpmi_php_request_method();
+	char *script_filename = fpmi_php_script_filename();
+	char *query_string = fpmi_php_query_string();
+	char *auth_user = fpmi_php_auth_user();
+	size_t content_length = fpmi_php_content_length();
 	struct timeval now;
 
-	fpm_clock_get(&now);
+	fpmi_clock_get(&now);
 
-	proc = fpm_scoreboard_proc_acquire(NULL, -1, 0);
+	proc = fpmi_scoreboard_proc_acquire(NULL, -1, 0);
 	if (proc == NULL) {
 		zlog(ZLOG_WARNING, "failed to acquire proc scoreboard");
 		return;
 	}
 
-	proc->request_stage = FPM_REQUEST_INFO;
+	proc->request_stage = FPMI_REQUEST_INFO;
 	proc->tv = now;
 
 	if (request_uri) {
@@ -147,49 +147,49 @@ void fpm_request_info() /* {{{ */
 		strlcpy(proc->script_filename, script_filename, sizeof(proc->script_filename));
 	}
 
-	fpm_scoreboard_proc_release(proc);
+	fpmi_scoreboard_proc_release(proc);
 }
 /* }}} */
 
-void fpm_request_executing() /* {{{ */
+void fpmi_request_executing() /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
+	struct fpmi_scoreboard_proc_s *proc;
 	struct timeval now;
 
-	fpm_clock_get(&now);
+	fpmi_clock_get(&now);
 
-	proc = fpm_scoreboard_proc_acquire(NULL, -1, 0);
+	proc = fpmi_scoreboard_proc_acquire(NULL, -1, 0);
 	if (proc == NULL) {
 		zlog(ZLOG_WARNING, "failed to acquire proc scoreboard");
 		return;
 	}
 
-	proc->request_stage = FPM_REQUEST_EXECUTING;
+	proc->request_stage = FPMI_REQUEST_EXECUTING;
 	proc->tv = now;
-	fpm_scoreboard_proc_release(proc);
+	fpmi_scoreboard_proc_release(proc);
 }
 /* }}} */
 
-void fpm_request_end(void) /* {{{ */
+void fpmi_request_end(void) /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
+	struct fpmi_scoreboard_proc_s *proc;
 	struct timeval now;
 #ifdef HAVE_TIMES
 	struct tms cpu;
 #endif
 	size_t memory = zend_memory_peak_usage(1);
 
-	fpm_clock_get(&now);
+	fpmi_clock_get(&now);
 #ifdef HAVE_TIMES
 	times(&cpu);
 #endif
 
-	proc = fpm_scoreboard_proc_acquire(NULL, -1, 0);
+	proc = fpmi_scoreboard_proc_acquire(NULL, -1, 0);
 	if (proc == NULL) {
 		zlog(ZLOG_WARNING, "failed to acquire proc scoreboard");
 		return;
 	}
-	proc->request_stage = FPM_REQUEST_FINISHED;
+	proc->request_stage = FPMI_REQUEST_FINISHED;
 	proc->tv = now;
 	timersub(&now, &proc->accepted, &proc->duration);
 #ifdef HAVE_TIMES
@@ -200,43 +200,43 @@ void fpm_request_end(void) /* {{{ */
 	proc->last_request_cpu.tms_cstime = cpu.tms_cstime - proc->cpu_accepted.tms_cstime;
 #endif
 	proc->memory = memory;
-	fpm_scoreboard_proc_release(proc);
+	fpmi_scoreboard_proc_release(proc);
 }
 /* }}} */
 
-void fpm_request_finished() /* {{{ */
+void fpmi_request_finished() /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
+	struct fpmi_scoreboard_proc_s *proc;
 	struct timeval now;
 
-	fpm_clock_get(&now);
+	fpmi_clock_get(&now);
 
-	proc = fpm_scoreboard_proc_acquire(NULL, -1, 0);
+	proc = fpmi_scoreboard_proc_acquire(NULL, -1, 0);
 	if (proc == NULL) {
 		zlog(ZLOG_WARNING, "failed to acquire proc scoreboard");
 		return;
 	}
 
-	proc->request_stage = FPM_REQUEST_FINISHED;
+	proc->request_stage = FPMI_REQUEST_FINISHED;
 	proc->tv = now;
-	fpm_scoreboard_proc_release(proc);
+	fpmi_scoreboard_proc_release(proc);
 }
 /* }}} */
 
-void fpm_request_check_timed_out(struct fpm_child_s *child, struct timeval *now, int terminate_timeout, int slowlog_timeout) /* {{{ */
+void fpmi_request_check_timed_out(struct fpmi_child_s *child, struct timeval *now, int terminate_timeout, int slowlog_timeout) /* {{{ */
 {
-	struct fpm_scoreboard_proc_s proc, *proc_p;
+	struct fpmi_scoreboard_proc_s proc, *proc_p;
 
-	proc_p = fpm_scoreboard_proc_acquire(child->wp->scoreboard, child->scoreboard_i, 1);
+	proc_p = fpmi_scoreboard_proc_acquire(child->wp->scoreboard, child->scoreboard_i, 1);
 	if (!proc_p) {
 		zlog(ZLOG_WARNING, "failed to acquire scoreboard");
 		return;
 	}
 
 	proc = *proc_p;
-	fpm_scoreboard_proc_release(proc_p);
+	fpmi_scoreboard_proc_release(proc_p);
 
-#if HAVE_FPM_TRACE
+#if HAVE_FPMI_TRACE
 	if (child->slow_logged.tv_sec) {
 		if (child->slow_logged.tv_sec != proc.accepted.tv_sec || child->slow_logged.tv_usec != proc.accepted.tv_usec) {
 			child->slow_logged.tv_sec = 0;
@@ -245,22 +245,22 @@ void fpm_request_check_timed_out(struct fpm_child_s *child, struct timeval *now,
 	}
 #endif
 
-	if (proc.request_stage > FPM_REQUEST_ACCEPTING && proc.request_stage < FPM_REQUEST_END) {
+	if (proc.request_stage > FPMI_REQUEST_ACCEPTING && proc.request_stage < FPMI_REQUEST_END) {
 		char purified_script_filename[sizeof(proc.script_filename)];
 		struct timeval tv;
 
 		timersub(now, &proc.accepted, &tv);
 
-#if HAVE_FPM_TRACE
+#if HAVE_FPMI_TRACE
 		if (child->slow_logged.tv_sec == 0 && slowlog_timeout &&
-				proc.request_stage == FPM_REQUEST_EXECUTING && tv.tv_sec >= slowlog_timeout) {
+				proc.request_stage == FPMI_REQUEST_EXECUTING && tv.tv_sec >= slowlog_timeout) {
 
 			str_purify_filename(purified_script_filename, proc.script_filename, sizeof(proc.script_filename));
 
 			child->slow_logged = proc.accepted;
-			child->tracer = fpm_php_trace;
+			child->tracer = fpmi_php_trace;
 
-			fpm_trace_signal(child->pid);
+			fpmi_trace_signal(child->pid);
 
 			zlog(ZLOG_WARNING, "[pool %s] child %d, script '%s' (request: \"%s %s%s%s\") executing too slow (%d.%06d sec), logging",
 				child->wp->config->name, (int) child->pid, purified_script_filename, proc.request_method, proc.request_uri,
@@ -271,7 +271,7 @@ void fpm_request_check_timed_out(struct fpm_child_s *child, struct timeval *now,
 #endif
 		if (terminate_timeout && tv.tv_sec >= terminate_timeout) {
 			str_purify_filename(purified_script_filename, proc.script_filename, sizeof(proc.script_filename));
-			fpm_pctl_kill(child->pid, FPM_PCTL_TERM);
+			fpmi_pctl_kill(child->pid, FPMI_PCTL_TERM);
 
 			zlog(ZLOG_WARNING, "[pool %s] child %d, script '%s' (request: \"%s %s%s%s\") execution timed out (%d.%06d sec), terminating",
 				child->wp->config->name, (int) child->pid, purified_script_filename, proc.request_method, proc.request_uri,
@@ -282,27 +282,27 @@ void fpm_request_check_timed_out(struct fpm_child_s *child, struct timeval *now,
 }
 /* }}} */
 
-int fpm_request_is_idle(struct fpm_child_s *child) /* {{{ */
+int fpmi_request_is_idle(struct fpmi_child_s *child) /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
+	struct fpmi_scoreboard_proc_s *proc;
 
 	/* no need in atomicity here */
-	proc = fpm_scoreboard_proc_get(child->wp->scoreboard, child->scoreboard_i);
+	proc = fpmi_scoreboard_proc_get(child->wp->scoreboard, child->scoreboard_i);
 	if (!proc) {
 		return 0;
 	}
 
-	return proc->request_stage == FPM_REQUEST_ACCEPTING;
+	return proc->request_stage == FPMI_REQUEST_ACCEPTING;
 }
 /* }}} */
 
-int fpm_request_last_activity(struct fpm_child_s *child, struct timeval *tv) /* {{{ */
+int fpmi_request_last_activity(struct fpmi_child_s *child, struct timeval *tv) /* {{{ */
 {
-	struct fpm_scoreboard_proc_s *proc;
+	struct fpmi_scoreboard_proc_s *proc;
 
 	if (!tv) return -1;
 
-	proc = fpm_scoreboard_proc_get(child->wp->scoreboard, child->scoreboard_i);
+	proc = fpmi_scoreboard_proc_get(child->wp->scoreboard, child->scoreboard_i);
 	if (!proc) {
 		return -1;
 	}

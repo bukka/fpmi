@@ -1,9 +1,9 @@
 
-	/* $Id: fpm_str.h,v 1.3 2008/05/24 17:38:47 anight Exp $ */
+	/* $Id: fpmi_str.h,v 1.3 2008/05/24 17:38:47 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
-#ifndef FPM_STR_H
-#define FPM_STR_H 1
+#ifndef FPMI_STR_H
+#define FPMI_STR_H 1
 
 static inline char *str_purify_filename(char *dst, char *src, size_t size) /* {{{ */
 {
