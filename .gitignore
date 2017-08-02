@@ -1,6 +1,9 @@
-php-fpm.8
-php-fpm.service
-status.html
-www.conf
 *.lo
 *.o
+init.d.php-fpmi
+php-fpmi
+php-fpmi.8
+php-fpmi.conf
+php-fpmi.service
+status.html
+www.conf
