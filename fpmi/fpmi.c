@@ -40,7 +40,7 @@ struct fpmi_globals_s fpmi_globals = {
 	.heartbeat = 0,
 	.run_as_root = 0,
 	.force_stderr = 0,
-	.send_config_pipe = {0, 0},
+	.send_config_pipe = {0, 0}
 };
 
 int fpmi_init(int argc, char **argv, char *config, char *prefix, char *pid, int test_conf, int run_as_root, int force_daemon, int force_stderr) /* {{{ */

@@ -122,13 +122,16 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	int is_stdout;
 	struct fpmi_event_s *event;
 	int fifo_in = 1, fifo_out = 1;
-	int is_last_message = 0;
 	int in_buf = 0;
 	int res;
+	int init_stream_prefix_and_suffix = 1;
+	struct zlog_stream stream;
 
 	if (!arg) {
 		return;
 	}
+	zlog_stream_init_for_stdio(&stream, ZLOG_WARNING, STDERR_FILENO);
+
 	child = (struct fpmi_child_s *)arg;
 	is_stdout = (fd == child->fd_stdout);
 	if (is_stdout) {
@@ -151,7 +154,6 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 					}
 
 					fpmi_event_del(event);
-					is_last_message = 1;
 
 					if (is_stdout) {
 						close(child->fd_stdout);
@@ -193,8 +195,13 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 						*nl = '\0';
 					}
 
-					zlog(ZLOG_WARNING, "[pool %s] child %d said into %s: \"%s\"%s", child->wp->config->name,
-					  (int) child->pid, is_stdout ? "stdout" : "stderr", buf, is_last_message ? ", pipe is closed" : "");
+					if (init_stream_prefix_and_suffix) {
+						zlog_stream_set_wrapping_prefix(&stream, "[pool %s] child %d said into %s: \"",
+								child->wp->config->name, (int) child->pid, is_stdout ? "stdout" : "stderr");
+						zlog_stream_set_wrapping_suffix(&stream, "\"", ", pipe is closed");
+						init_stream_prefix_and_suffix = 0;
+					}
+					zlog_stream_str(&stream, buf, strlen(buf));
 
 					if (nl) {
 						int out_buf = 1 + nl - buf;
@@ -207,6 +214,8 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 			}
 		}
 	}
+	zlog_stream_finish(&stream);
+	zlog_stream_destroy(&stream);
 }
 /* }}} */
 

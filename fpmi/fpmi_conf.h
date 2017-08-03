@@ -31,6 +31,8 @@ struct fpmi_global_config_s {
 	int syslog_facility;
 #endif
 	int log_level;
+	int log_limit;
+	int worker_output_limit;
 	int emergency_restart_threshold;
 	int emergency_restart_interval;
 	int process_control_timeout;

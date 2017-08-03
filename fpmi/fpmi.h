@@ -57,6 +57,7 @@ struct fpmi_globals_s {
 	int run_as_root;
 	int force_stderr;
 	int send_config_pipe[2];
+	int workers_output_limit;
 };
 
 extern struct fpmi_globals_s fpmi_globals;

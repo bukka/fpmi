@@ -81,6 +81,7 @@ struct fpmi_global_config_s fpmi_global_config = {
 	.systemd_watchdog = 0,
 	.systemd_interval = -1, /* -1 means not set */
 #endif
+	.log_limit = ZLOG_DEFAULT_LIMIT
 };
 static struct fpmi_worker_pool_s *current_wp = NULL;
 static int ini_recursion = 0;
@@ -99,6 +100,8 @@ static struct ini_value_parser_s ini_fpmi_global_options[] = {
 	{ "syslog.facility",             &fpmi_conf_set_syslog_facility, GO(syslog_facility) },
 #endif
 	{ "log_level",                   &fpmi_conf_set_log_level,       GO(log_level) },
+	{ "log_limit",                   &fpmi_conf_set_integer,         GO(log_limit) },
+	{ "worker_output_limit",         &fpmi_conf_set_integer,         GO(worker_output_limit) },
 	{ "emergency_restart_threshold", &fpmi_conf_set_integer,         GO(emergency_restart_threshold) },
 	{ "emergency_restart_interval",  &fpmi_conf_set_time,            GO(emergency_restart_interval) },
 	{ "process_control_timeout",     &fpmi_conf_set_time,            GO(process_control_timeout) },
@@ -1191,6 +1194,7 @@ static int fpmi_conf_post_process(int force_daemon) /* {{{ */
 
 	fpmi_globals.log_level = fpmi_global_config.log_level;
 	zlog_set_level(fpmi_globals.log_level);
+	zlog_set_limit(fpmi_global_config.log_limit);
 
 	if (fpmi_global_config.process_max < 0) {
 		zlog(ZLOG_ERROR, "process_max can't be negative");
@@ -1264,6 +1268,7 @@ static void fpmi_conf_cleanup(int which, void *arg) /* {{{ */
 	free(fpmi_global_config.events_mechanism);
 	fpmi_global_config.pid_file = 0;
 	fpmi_global_config.error_log = 0;
+	fpmi_global_config.log_limit = ZLOG_DEFAULT_LIMIT;
 #ifdef HAVE_SYSLOG_H
 	free(fpmi_global_config.syslog_ident);
 	fpmi_global_config.syslog_ident = 0;
@@ -1606,6 +1611,8 @@ static void fpmi_conf_dump() /* {{{ */
 	zlog(ZLOG_NOTICE, "\tsyslog.facility = %d",             fpmi_global_config.syslog_facility); /* FIXME: convert to string */
 #endif
 	zlog(ZLOG_NOTICE, "\tlog_level = %s",                   zlog_get_level_name(fpmi_globals.log_level));
+	zlog(ZLOG_NOTICE, "\tlog_limit = %d",                   fpmi_global_config.log_limit);
+	zlog(ZLOG_NOTICE, "\tworkers_output_limit = %d",        fpmi_globals.workers_output_limit);
 	zlog(ZLOG_NOTICE, "\temergency_restart_interval = %ds", fpmi_global_config.emergency_restart_interval);
 	zlog(ZLOG_NOTICE, "\temergency_restart_threshold = %d", fpmi_global_config.emergency_restart_threshold);
 	zlog(ZLOG_NOTICE, "\tprocess_control_timeout = %ds",    fpmi_global_config.process_control_timeout);
