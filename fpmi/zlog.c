@@ -473,10 +473,11 @@ ssize_t zlog_stream_set_wrapping_prefix(struct zlog_stream *stream, const char *
 	va_end(args);
 
 	stream->wrap_prefix = malloc(len);
-	if (stream->wrap_prefix != NULL) {
+	if (stream->wrap_prefix == NULL) {
 		return -1;
 	}
 	memcpy(stream->wrap_prefix, buf, len);
+	stream->wrap_prefix_len = len;
 
 	return len;
 }
