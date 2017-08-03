@@ -323,7 +323,7 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 {
 	int finished = 0;
 	const char *append;
-	size_t append_len;
+	size_t append_len = 0;
 	ssize_t written;
 
 	if (stream->len + len >= zlog_limit) {
