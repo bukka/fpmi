@@ -324,6 +324,7 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 	int finished = 0;
 	const char *append;
 	size_t append_len;
+	ssize_t written;
 
 	if (stream->len + len >= zlog_limit) {
 		if (stream->wrap) {
@@ -347,7 +348,12 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 				zlog_stream_direct_write_ex(stream, buf, len, append, append_len);
 			}
 			/* TODO: use loop to speed it up */
-			return len + zlog_stream_unbuffered_write(stream, buf + len, len);
+			written = zlog_stream_unbuffered_write(stream, buf + len, len);
+			if (written > 0) {
+				return len + written;
+			}
+
+			return written;
 		}
 		stream->finished = finished = 1;
 		append = (stream->len + len == zlog_limit) ? "\n" : "...\n";
@@ -355,7 +361,14 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 		len = zlog_limit - stream->len - append_len;
 	}
 
-	return zlog_stream_direct_write_ex(stream, buf, len, append, append_len);
+	written = zlog_stream_direct_write_ex(stream, buf, len, append, append_len);
+	if (written > 0) {
+		/* currently written will be always len as the write is blocking
+		 * - this should be address if we change to non-blocking write */
+		stream->len += written;
+	}
+
+	return written;
 }
 /* }}} */
 
