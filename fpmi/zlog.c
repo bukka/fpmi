@@ -361,6 +361,11 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 		len = zlog_limit - stream->len - append_len;
 	}
 
+	if (stream->len == 0 && stream->wrap && stream->wrap_prefix_len > 0) {
+		zlog_stream_direct_write_ex(
+				stream, stream->wrap_prefix, stream->wrap_prefix_len, NULL, 0);
+	}
+
 	written = zlog_stream_direct_write_ex(stream, buf, len, append, append_len);
 	if (written > 0) {
 		/* currently written will be always len as the write is blocking
@@ -469,7 +474,7 @@ ssize_t zlog_stream_set_wrapping_prefix(struct zlog_stream *stream, const char *
 	va_list args;
 
 	va_start(args, fmt);
-	len = vsnprintf(buf, MAX_WRAPPING_PREFIX_LENGTH, fmt, args);
+	len = vsnprintf(buf, MAX_WRAPPING_PREFIX_LENGTH - 1, fmt, args);
 	va_end(args);
 
 	stream->wrap_prefix = malloc(len);
@@ -477,6 +482,7 @@ ssize_t zlog_stream_set_wrapping_prefix(struct zlog_stream *stream, const char *
 		return -1;
 	}
 	memcpy(stream->wrap_prefix, buf, len);
+	stream->wrap_prefix[len] = 0;
 	stream->wrap_prefix_len = len;
 
 	return len;
