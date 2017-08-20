@@ -323,16 +323,16 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 {
 	int finished = 0;
 	const char *append;
-	size_t append_len = 0;
+	size_t append_len = 0, available_len;
 	ssize_t written;
+
+	if (stream->len == 0) {
+		stream->len = zlog_stream_prefix_ex(stream, stream->function, stream->line);
+	}
 
 	if (stream->len + len >= zlog_limit) {
 		if (stream->wrap) {
-			if (stream->wrap_prefix != NULL) {
-				zlog_stream_direct_write_ex(
-						stream, stream->wrap_prefix, stream->wrap_prefix_len, NULL, 0);
-			}
-			len = zlog_limit - stream->len;
+			available_len = zlog_limit - stream->len;
 			if (stream->len + len == zlog_limit) {
 				append = NULL;
 				append_len = 0;
@@ -340,17 +340,18 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 				append = "\n";
 				append_len = 1;
 			}
-			if (stream->wrap_suffix) {
-				zlog_stream_direct_write(stream, buf, len);
+			if (stream->wrap_suffix && append != NULL) {
+				zlog_stream_direct_write(stream, buf, available_len);
 				zlog_stream_direct_write_ex(
 						stream, stream->wrap_suffix, stream->wrap_suffix_len, append, append_len);
 			} else {
-				zlog_stream_direct_write_ex(stream, buf, len, append, append_len);
+				zlog_stream_direct_write_ex(stream, buf, available_len, append, append_len);
 			}
+			stream->len = 0;
 			/* TODO: use loop to speed it up */
-			written = zlog_stream_unbuffered_write(stream, buf + len, len);
+			written = zlog_stream_unbuffered_write(stream, buf + available_len, len - available_len);
 			if (written > 0) {
-				return len + written;
+				return available_len + written;
 			}
 
 			return written;
@@ -359,11 +360,6 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 		append = (stream->len + len == zlog_limit) ? "\n" : "...\n";
 		append_len = sizeof(append) - 1;
 		len = zlog_limit - stream->len - append_len;
-	}
-
-	if (stream->len == 0 && stream->wrap && stream->wrap_prefix_len > 0) {
-		zlog_stream_direct_write_ex(
-				stream, stream->wrap_prefix, stream->wrap_prefix_len, NULL, 0);
 	}
 
 	written = zlog_stream_direct_write_ex(stream, buf, len, append, append_len);
@@ -623,7 +619,12 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 		stream->buf[stream->len++] = '\n';
 		zlog_stream_direct_write(stream, stream->buf, stream->len);
 	} else if (!stream->finished) {
-		if (stream->wrap_final_suffix != NULL) {
+		if (stream->wrap_suffix != NULL) {
+			zlog_stream_direct_write_ex(
+					stream, stream->wrap_suffix, stream->wrap_suffix_len,
+					stream->wrap_final_suffix, stream->wrap_final_suffix_len);
+			zlog_stream_direct_write(stream, "\n", 1);
+		} else if (stream->wrap_final_suffix != NULL) {
 			zlog_stream_direct_write_ex(
 					stream, stream->wrap_final_suffix, stream->wrap_final_suffix_len, "\n", 1);
 		} else {
