@@ -108,6 +108,19 @@ function fpmi_display_log($tail, $n=1, $ignore='systemd') { /* {{{ */
 	}
 } /* }}} */
 
+function fpmi_get_log_lines($tail, $n=1, $ignore='systemd') { /* {{{ */
+	$lines = [];
+	/* Read $n lines or until EOF */
+	while ($n>0 || ($n<0 && !feof($tail))) {
+		$a = fgets($tail);
+		if (empty($ignore) || !strpos($a, $ignore)) {
+			$lines[] = $a;
+			$n--;
+		}
+	}
+	return $lines;
+} /* }}} */
+
 function run_request($host, $port, $uri='/ping', $query='', $headers=array()) {  /* {{{ */
 	require_once 'fcgi.inc';
 	$client = new Adoy\FastCGI\Client($host, $port);
