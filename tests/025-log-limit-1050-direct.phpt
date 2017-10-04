@@ -42,12 +42,11 @@ if (is_resource($fpmi)) {
 		echo "Request error\n";
 	}
 	proc_terminate($fpmi);
-	$lines = fpmi_get_log_lines($tail, -1);
+	$lines = fpmi_get_log_lines($tail, -1, true);
 	fclose($tail);
 	proc_close($fpmi);
 	foreach ($lines as $line) {
-		if (strlen($line) > 2)
-			echo $line;
+		echo $line;
 	}
 }
 

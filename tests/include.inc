@@ -108,12 +108,12 @@ function fpmi_display_log($tail, $n=1, $ignore='systemd') { /* {{{ */
 	}
 } /* }}} */
 
-function fpmi_get_log_lines($tail, $n=1, $ignore='systemd') { /* {{{ */
+function fpmi_get_log_lines($tail, $n=1, $skip_blank=false, $ignore='systemd') { /* {{{ */
 	$lines = [];
 	/* Read $n lines or until EOF */
 	while ($n>0 || ($n<0 && !feof($tail))) {
 		$a = fgets($tail);
-		if (empty($ignore) || !strpos($a, $ignore)) {
+		if ((empty($ignore) || !strpos($a, $ignore)) && (!$skip_blank || strlen(trim($a)) > 0)) {
 			$lines[] = $a;
 			$n--;
 		}
