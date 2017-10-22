@@ -20,7 +20,7 @@ class LogTool
 		$this->message = $message;
 		$this->limit = $limit;
 		$this->position = 0;
-		$this->pattern = sprintf('/^(%s %s)"([^"]*)"(, pipe is closed)?$/', self::P_TIME, self::P_PREFIX);
+		$this->pattern = sprintf('/^(%s %s)"([^"]*)"(.*)?$/', self::P_TIME, self::P_PREFIX);
 	}
 
 	public function check($lines, $terminated = true)
@@ -40,6 +40,17 @@ class LogTool
 	{
 		if (preg_match($this->pattern,  $line, $matches) === false) {
 			echo "ERROR: unexpected line: $line";
+		}
+
+		$rem = strlen($this->message) - $this->position;
+		$outLen = strlen($matches[2]);
+		if ($rem > $outLen) { //
+			//TODO: full (limit length) line should be printed
+		} elseif ($rem === $outLen)  {
+			//TODO: check that the rest of the message has been printed
+			//      and final suffix printed in $matches[3]
+		} else {
+			echo "ERROR: printed more than the message len";
 		}
 	}
 
