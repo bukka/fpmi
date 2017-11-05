@@ -6,6 +6,7 @@ FPMI: Log limit
 <?php
 
 require_once "include.inc";
+require_once "logtool.inc";
 
 $logfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.log';
 $srcfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.php';
@@ -45,9 +46,9 @@ if (is_resource($fpmi)) {
 	$lines = fpmi_get_log_lines($tail, -1, true);
 	fclose($tail);
 	proc_close($fpmi);
-	foreach ($lines as $line) {
-		echo $line;
-	}
+	$logtool = new FPMI\LogTool(str_repeat('a', 2048), 1050);
+	$logtool->check($lines);
+	echo "Done\n";
 }
 
 ?>
@@ -61,11 +62,6 @@ Content-type: text/html; charset=%s
 
 "
 Request ok
-[%s] WARNING: [pool unconfined] child %d said into stderr: "%s"
-[%s] WARNING: [pool unconfined] child %d said into stderr: "%s"
-[%s] WARNING: [pool unconfined] child %d said into stderr: "%s", pipe is closed
-[%s] NOTICE: Terminating ...
-[%s] NOTICE: exiting, bye-bye!
 Done
 --CLEAN--
 <?php
