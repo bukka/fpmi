@@ -48,7 +48,6 @@ if (is_resource($fpmi)) {
 	proc_close($fpmi);
 	$logtool = new FPMI\LogTool(str_repeat('a', 2048), 1050);
 	$logtool->check($lines);
-	echo "Done\n";
 }
 
 ?>
