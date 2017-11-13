@@ -1,5 +1,5 @@
 --TEST--
-FPMI: Log limit 1050 with 2048 msg
+FPMI: Log limit 8000 with 4096 msg
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -8,14 +8,14 @@ FPMI: Log limit 1050 with 2048 msg
 require_once "include.inc";
 require_once "logtool.inc";
 
-$logfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.log';
-$srcfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.php';
+$logfile = __DIR__.'/php-fpmi-025-log-limit-8000-direct.log';
+$srcfile = __DIR__.'/php-fpmi-025-log-limit-8000-direct.php';
 $port = 9000+PHP_INT_SIZE;
 
 $cfg = <<<EOT
 [global]
 error_log = $logfile
-log_limit = 1050
+log_limit = 8000
 [unconfined]
 listen = 127.0.0.1:$port
 pm = dynamic
@@ -28,7 +28,7 @@ EOT;
 
 $code = <<<EOT
 <?php
-file_put_contents('php://stderr', str_repeat('a', 2048) . "\n");
+file_put_contents('php://stderr', str_repeat('a', 4096) . "\n");
 EOT;
 file_put_contents($srcfile, $code);
 
@@ -46,7 +46,7 @@ if (is_resource($fpmi)) {
 	$lines = fpmi_get_log_lines($tail, -1, true);
 	fclose($tail);
 	proc_close($fpmi);
-	$logtool = new FPMI\LogTool(str_repeat('a', 2048), 1050);
+	$logtool = new FPMI\LogTool(str_repeat('a', 4096), 8000);
 	$logtool->check($lines);
 }
 
@@ -64,8 +64,8 @@ Request ok
 Done
 --CLEAN--
 <?php
-$logfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.log';
-$srcfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.php';
+$logfile = __DIR__.'/php-fpmi-025-log-limit-8000-direct.log';
+$srcfile = __DIR__.'/php-fpmi-025-log-limit-8000-direct.php';
 @unlink($logfile);
 @unlink($srcfile);
 ?>
