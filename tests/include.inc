@@ -8,10 +8,9 @@ function get_fpmi_path() /* {{{ */
         if ($slash_pos) {
             $php_path = substr($php_path, 0, $slash_pos);
         } else {
-            return false;
+            break;
         }
     }
-
 
     if ($php_path && is_dir($php_path)) {
         if (file_exists($php_path."/fpmi/php-fpmi") && is_executable($php_path."/fpmi/php-fpmi")) {
@@ -23,6 +22,14 @@ function get_fpmi_path() /* {{{ */
             return $php_sbin_fpmi;
         }
     }
+
+    // try local php-fpmi
+    $fpmi_path = dirname(__DIR__) . '/php-fpmi';
+    echo $fpmi_path;
+    if (file_exists($fpmi_path) && is_executable($fpmi_path)) {
+        return $fpmi_path;
+    }
+
     return false;
 }
 /* }}} */
