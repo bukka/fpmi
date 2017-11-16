@@ -6,6 +6,7 @@ FPMI: Log limit 8000 with 4096 msg
 <?php
 
 require_once "tester.inc";
+require_once "logtool.inc";
 
 $cfg = <<<EOT
 [global]
