@@ -2,12 +2,21 @@
 
 namespace FPMI;
 
+use Adoy\FastCGI\Client;
+
+require_once 'fcgi.inc';
+
 class Tester
 {
     /**
      * @var array
      */
     static private $supportedFiles = ['log', 'src.php', 'ini'];
+
+    /**
+     * @var Client
+     */
+    private $client;
 
     /**
      * Configuration template
@@ -42,6 +51,36 @@ class Tester
      * @var resource
      */
     private $outDesc;
+
+    /**
+     * Clean all the created files up
+     */
+    static public function clean()
+    {
+        $filePrefix = self::getCallerFileName();
+
+        foreach (self::$supportedFiles as $fileExtension) {
+            $filePath = $filePrefix . $fileExtension;
+            if (is_file($filePath)) {
+                unlink($filePath);
+            }
+        }
+    }
+
+    /**
+     * @return string
+     */
+    static private function getCallerFileName()
+    {
+        $backtrace = debug_backtrace();
+        if (isset($backtrace[1]['file'])) {
+            $filePath = $backtrace[1]['file'];
+        } else {
+            $filePath = __FILE__;
+        }
+
+        return substr($filePath, 0, -strlen(pathinfo($filePath, PATHINFO_EXTENSION)));
+    }
 
     /**
      * @return bool|string
@@ -91,7 +130,8 @@ class Tester
         $this->configTemplate = $configTemplate;
         $this->code = $code;
         $this->options = $options;
-        $this->fileName = $this->getCallerFileName();
+        $this->fileName = self::getCallerFileName();
+        $this->client = new Client($this->getHost(), $this->getPort());
     }
 
     /**
@@ -135,12 +175,37 @@ class Tester
 
     /**
      * Execute request
-     *
-     * @param bool $print
+     * @param string $uri
+     * @param string $query
+     * @param array $headers
+     * @return string
      */
-    public function request(bool $print = false)
+    public function request(string $uri = '/ping', string $query = '', array $headers = [])
     {
+        $params = array_merge(
+            [
+                'GATEWAY_INTERFACE' => 'FastCGI/1.0',
+                'REQUEST_METHOD'    => 'GET',
+                'SCRIPT_FILENAME'   => $uri,
+                'SCRIPT_NAME'       => $uri,
+                'QUERY_STRING'      => $query,
+                'REQUEST_URI'       => $uri . ($query ? '?'.$query : ""),
+                'DOCUMENT_URI'      => $uri,
+                'SERVER_SOFTWARE'   => 'php/fcgiclient',
+                'REMOTE_ADDR'       => '127.0.0.1',
+                'REMOTE_PORT'       => '9985',
+                'SERVER_ADDR'       => '127.0.0.1',
+                'SERVER_PORT'       => '80',
+                'SERVER_NAME'       => php_uname('n'),
+                'SERVER_PROTOCOL'   => 'HTTP/1.1',
+                'DOCUMENT_ROOT'     => __DIR__,
+                'CONTENT_TYPE'      => '',
+                'CONTENT_LENGTH'    => 0
+            ],
+            $headers
+        );
 
+        return $this->client->request($params, false) . "\n";
     }
 
     /**
@@ -151,7 +216,14 @@ class Tester
      */
     public function displayLog(int $number = 1, string $ignore = 'systemd')
     {
-        //TODO: implement
+        /* Read $number lines or until EOF */
+        while ($number > 0 || ($number < 0 && !feof($this->outDesc))) {
+            $a = fgets($this->outDesc);
+            if (empty($ignore) || !strpos($a, $ignore)) {
+                echo $a;
+                $number--;
+            }
+        }
     }
 
     /**
@@ -160,10 +232,38 @@ class Tester
      * @param int $number
      * @param bool $skipBlank
      * @param string $ignore
+     * @return array
      */
     public function getLogLines(int $number = 1, bool $skipBlank = false, string $ignore = 'systemd')
     {
-        //TODO: implement
+        $lines = [];
+        /* Read $n lines or until EOF */
+        while ($number > 0 || ($number < 0 && !feof($this->outDesc))) {
+            $line = fgets($this->outDesc);
+            if ((empty($ignore) || !strpos($line, $ignore)) && (!$skipBlank || strlen(trim($line)) > 0)) {
+                $lines[] = $line;
+                $number--;
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * Terminate master process
+     */
+    public function terminate()
+    {
+        proc_terminate($this->masterProcess);
+    }
+
+    /**
+     * Close all open descriptors and process resources
+     */
+    public function close()
+    {
+        fclose($this->outDesc);
+        proc_close($this->masterProcess);
     }
 
     /**
@@ -189,22 +289,7 @@ class Tester
      */
     private function getAddr()
     {
-        return $this->options['addr'] ?? $this->getHost() . ':' . $this->getPort();
-    }
-
-    /**
-     * @return string
-     */
-    private function getCallerFileName()
-    {
-        $backtrace = debug_backtrace();
-        if (isset($backtrace[1]['file'])) {
-            $filePath = $backtrace[1]['file'];
-        } else {
-            $filePath = __FILE__;
-        }
-
-        return substr($filePath, 0, -strlen(pathinfo($filePath, PATHINFO_EXTENSION)));
+        return $this->getHost() . ':' . $this->getPort();
     }
 
     /**
