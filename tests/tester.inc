@@ -180,8 +180,12 @@ class Tester
      * @param array $headers
      * @return string
      */
-    public function request(string $uri = '/ping', string $query = '', array $headers = [])
+    public function request(string $query = '', array $headers = [], string $uri = null)
     {
+        if (is_null($uri)) {
+            $uri = $this->makeFile('src.php', $this->code);
+        }
+
         $params = array_merge(
             [
                 'GATEWAY_INTERFACE' => 'FastCGI/1.0',
@@ -205,7 +209,11 @@ class Tester
             $headers
         );
 
-        return $this->client->request($params, false) . "\n";
+        try {
+            return $this->client->request($params, false) . "\n";
+        } catch (\Exception $exception) {
+            $this->error("Request failed", $exception);
+        }
     }
 
     /**
@@ -332,5 +340,18 @@ class Tester
     private function getHost()
     {
         return '127.0.0.1';
+    }
+
+    /**
+     * @param $msg
+     * @param \Exception|null $exception
+     */
+    private function error($msg, \Exception $exception = null)
+    {
+        echo 'ERROR: ' . $msg;
+        if ($exception) {
+            echo '; EXCEPTION: ' . $exception->getMessage();
+        }
+        echo "\n";
     }
 }

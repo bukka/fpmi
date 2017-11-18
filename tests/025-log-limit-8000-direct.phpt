@@ -46,7 +46,6 @@ Content-type: text/html; charset=%s
 
 
 "
-Request ok
 Done
 --CLEAN--
 <?php
