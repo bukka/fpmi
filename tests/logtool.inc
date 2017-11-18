@@ -20,9 +20,9 @@ class LogTool
 
     private $error;
 
-    public function __construct($message, $limit)
+    public function __construct($message, $limit, $repeat = 0)
     {
-        $this->message = $message;
+        $this->message = ($repeat > 0) ? str_repeat($message, $repeat) : $message;
         $this->limit = $limit;
         $this->position = 0;
         $this->pattern = sprintf('/^(%s %s)"([^"]*)"(.*)?$/', self::P_TIME, self::P_PREFIX);
@@ -62,6 +62,9 @@ class LogTool
 
         $rem = strlen($this->message) - $this->position;
         $lineLen = strlen($line);
+        if ($lineLen > $this->limit) {
+            return $this->error("The line length is $lineLen which is higher than limit $this->limit");
+        }
         $outLen = strlen($matches[2]);
         if ($rem > $outLen) { // continous line
             if ($lineLen !== $this->limit) {

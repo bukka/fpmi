@@ -32,7 +32,7 @@ $tester->start();
 $tester->displayLog(2);
 var_dump($tester->request());
 $tester->terminate();
-$logtool = new FPMI\LogTool(str_repeat('a', 4096), 8000);
+$logtool = new FPMI\LogTool('a', 8000, 4096);
 $logtool->check($tester->getLogLines(-1, true));
 $tester->close();
 
