@@ -342,7 +342,7 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 				append = "\n";
 				append_len = 1;
 			}
-			available_len = zlog_limit - reserved_len - append_len;
+			available_len = zlog_limit - reserved_len - 1;
 			if (stream->wrap_suffix && append != NULL) {
 				zlog_stream_direct_write(stream, buf, available_len);
 				zlog_stream_direct_write_ex(
@@ -623,13 +623,23 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 		zlog_stream_direct_write(stream, stream->buf, stream->len);
 	} else if (!stream->finished) {
 		if (stream->wrap_suffix != NULL) {
-			zlog_stream_direct_write_ex(
-					stream, stream->wrap_suffix, stream->wrap_suffix_len,
-					stream->wrap_final_suffix, stream->wrap_final_suffix_len);
-			zlog_stream_direct_write(stream, "\n", 1);
-		} else if (stream->wrap_final_suffix != NULL) {
-			zlog_stream_direct_write_ex(
-					stream, stream->wrap_final_suffix, stream->wrap_final_suffix_len, "\n", 1);
+			/* we should always have space for wrap suffix so we don't have to check it */
+			zlog_stream_direct_write(stream, stream->wrap_suffix, stream->wrap_suffix_len);
+			stream->len += stream->wrap_suffix_len;
+		}
+		if (stream->wrap_final_suffix != NULL) {
+			if (stream->len + stream->wrap_final_suffix_len >= zlog_limit) {
+				size_t extra_final_suffix = stream->len + stream->wrap_final_suffix_len + 1 - zlog_limit;
+				zlog_stream_direct_write_ex(
+						stream, stream->wrap_final_suffix, stream->wrap_final_suffix_len - extra_final_suffix, "\n", 1);
+				zlog_stream_prefix_ex(stream, stream->function, stream->line);
+				zlog_stream_direct_write_ex(
+						stream, stream->wrap_final_suffix + (stream->wrap_final_suffix_len - extra_final_suffix),
+						extra_final_suffix, "\n", 1);
+			} else {
+				zlog_stream_direct_write_ex(
+						stream, stream->wrap_final_suffix, stream->wrap_final_suffix_len, "\n", 1);
+			}
 		} else {
 			zlog_stream_direct_write(stream, "\n", 1);
 		}
