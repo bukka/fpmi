@@ -58,6 +58,9 @@ class Tester
     static public function clean()
     {
         $filePrefix = self::getCallerFileName();
+        if (substr($filePrefix, -6) === 'clean.') {
+            $filePrefix = substr($filePrefix, 0, -6);
+        }
 
         foreach (self::$supportedFiles as $fileExtension) {
             $filePath = $filePrefix . $fileExtension;
