@@ -7,3 +7,10 @@ php-fpmi.conf
 php-fpmi.service
 status.html
 www.conf
+/tests/*.diff
+/tests/*.exp
+/tests/*.log
+/tests/*.out
+/tests/*.php
+/tests/*.sh
+
