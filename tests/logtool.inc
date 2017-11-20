@@ -8,19 +8,42 @@ class LogTool
     const P_PREFIX = 'WARNING: \[pool unconfined\] child \d+ said into stderr: ';
     const FINAL_SUFFIX = ', pipe is closed';
 
+    /**
+     * @var string
+     */
     private $message;
 
+    /**
+     * @var int
+     */
     private $position;
 
+    /**
+     * @var int
+     */
     private $suffixPosition;
 
+    /**
+     * @var int
+     */
     private $limit;
 
+    /**
+     * @var string
+     */
     private $pattern;
 
+    /**
+     * @var string
+     */
     private $error;
 
-    public function __construct($message, $limit, $repeat = 0)
+    /**
+     * @param string $message
+     * @param int $limit
+     * @param int $repeat
+     */
+    public function __construct(string $message, int $limit, int $repeat = 0)
     {
         $this->message = ($repeat > 0) ? str_repeat($message, $repeat) : $message;
         $this->limit = $limit;
@@ -28,7 +51,12 @@ class LogTool
         $this->pattern = sprintf('/^(%s %s)"([^"]*)"(.*)?$/', self::P_TIME, self::P_PREFIX);
     }
 
-    public function check($lines, $terminated = true)
+    /**
+     * @param array $lines
+     * @param bool $terminated
+     * @return bool
+     */
+    public function check(array $lines, bool $terminated = true)
     {
         foreach ($lines as $idx => $line) {
             if (!$this->checkLine($line)) {
@@ -54,7 +82,11 @@ class LogTool
         return true;
     }
 
-    private function checkLine($line)
+    /**
+     * @param string $line
+     * @return bool
+     */
+    private function checkLine(string $line)
     {
         if (preg_match($this->pattern, $line, $matches) === 0) {
             return $this->error("Unexpected line: $line");
@@ -94,7 +126,12 @@ class LogTool
         return false;
     }
 
-    private function checkTerminatorLines($lines, $idx)
+    /**
+     * @param array $lines
+     * @param int $idx
+     * @return bool
+     */
+    private function checkTerminatorLines(array $lines, int $idx)
     {
         if (count($lines) - $idx < 3) {
             return $this->error("No terminating lines");
@@ -108,7 +145,13 @@ class LogTool
         );
     }
 
-    private function checkTerminatingLine($line, $pattern, $expectedMessage)
+    /**
+     * @param string $line
+     * @param string $pattern
+     * @param string $expectedMessage
+     * @return bool
+     */
+    private function checkTerminatingLine(string $line, string $pattern, string $expectedMessage)
     {
         if (preg_match($pattern, $line, $matches) === 0) {
             return $this->error("Unexpected terminating line: $line");
@@ -120,13 +163,20 @@ class LogTool
         return true;
     }
 
-    private function error($msg)
+    /**
+     * @param string $msg
+     * @return bool
+     */
+    private function error(string $msg)
     {
         $this->error = $msg;
         echo "ERROR: $msg\n";
         return false;
     }
 
+    /**
+     * @return string
+     */
     public function getError()
     {
         return $this->error;
