@@ -43,7 +43,7 @@ class LogTool
      * @param int $limit
      * @param int $repeat
      */
-    public function __construct(string $message, int $limit, int $repeat = 0)
+    public function setExpectedChildMessage(string $message, int $limit, int $repeat = 0)
     {
         $this->message = ($repeat > 0) ? str_repeat($message, $repeat) : $message;
         $this->limit = $limit;
@@ -56,8 +56,12 @@ class LogTool
      * @param bool $terminated
      * @return bool
      */
-    public function check(array $lines, bool $terminated = true)
+    public function checkChildMessage(array $lines, bool $terminated = true)
     {
+        if ($this->message === null) {
+            throw new \LogicException('The child message has not been set');
+        }
+
         foreach ($lines as $idx => $line) {
             if (!$this->checkLine($line)) {
                 break;
@@ -76,7 +80,7 @@ class LogTool
         }
 
         if ($terminated) {
-            $this->checkTerminatorLines($lines, $idx);
+            $this->expectTerminatorLines($lines, $idx);
         }
 
         return true;
@@ -128,40 +132,103 @@ class LogTool
 
     /**
      * @param array $lines
+     * @return bool
+     */
+    public function expectStartingLines(array $lines)
+    {
+        if (count($lines) < 2) {
+            return $this->error("No starting lines");
+        }
+
+        return (
+            $this->expectNotice($lines[0], 'fpmi is running, pid \d+') &&
+            $this->expectNotice($lines[1], 'ready to handle connections')
+        );
+    }
+
+    /**
+     * @param array $lines
      * @param int $idx
      * @return bool
      */
-    private function checkTerminatorLines(array $lines, int $idx)
+    public function expectTerminatorLines(array $lines, int $idx)
     {
         if (count($lines) - $idx < 3) {
             return $this->error("No terminating lines");
         }
 
-        $pattern = sprintf('/^%s NOTICE: (.*)$/', self::P_TIME);
-
         return (
-            $this->checkTerminatingLine($lines[++$idx], $pattern, 'Terminating ...') &&
-            $this->checkTerminatingLine($lines[++$idx], $pattern, 'exiting, bye-bye!')
+            $this->expectNotice($lines[++$idx], 'Terminating ...') &&
+            $this->expectNotice($lines[++$idx], 'exiting, bye-bye!')
         );
     }
 
     /**
+     * @param string $type
      * @param string $line
-     * @param string $pattern
      * @param string $expectedMessage
      * @return bool
      */
-    private function checkTerminatingLine(string $line, string $pattern, string $expectedMessage)
+    public function expectEntry(string $type, string $line, string $expectedMessage)
     {
-        if (preg_match($pattern, $line, $matches) === 0) {
-            return $this->error("Unexpected terminating line: $line");
-        }
-        if (!isset($matches[1]) || $matches[1] !== $expectedMessage) {
-            return $this->error("The terminating message '${matches[1]}' does not match expected message '$expectedMessage'");
-        }
+        $line = rtrim($line);
+        $pattern = sprintf('/^%s %s: %s$/', self::P_TIME, $type, $expectedMessage);
 
-        return true;
+        if (preg_match($pattern, $line, $matches) === 0) {
+            return $this->error("The $type '$line' does not match expected message '$expectedMessage'");
+        }
     }
+
+    /**
+     * @param string $line
+     * @param string $expectedMessage
+     * @return bool
+     */
+    public function expectDebug(string $line, string $expectedMessage)
+    {
+        return $this->expectEntry('DEBUG', $line, $expectedMessage);
+    }
+
+    /**
+     * @param string $line
+     * @param string $expectedMessage
+     * @return bool
+     */
+    public function expectNotice(string $line, string $expectedMessage)
+    {
+        return $this->expectEntry('NOTICE', $line, $expectedMessage);
+    }
+
+    /**
+     * @param string $line
+     * @param string $expectedMessage
+     * @return bool
+     */
+    public function expectWarning(string $line, string $expectedMessage)
+    {
+        return $this->expectEntry('WARNING', $line, $expectedMessage);
+    }
+
+    /**
+     * @param string $line
+     * @param string $expectedMessage
+     * @return bool
+     */
+    public function expectError(string $line, string $expectedMessage)
+    {
+        return $this->expectEntry('ERROR', $line, $expectedMessage);
+    }
+
+    /**
+     * @param string $line
+     * @param string $expectedMessage
+     * @return bool
+     */
+    public function expectAlert(string $line, string $expectedMessage)
+    {
+        return $this->expectEntry('ALERT', $line, $expectedMessage);
+    }
+
 
     /**
      * @param string $msg
@@ -211,8 +278,9 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
     ];
     foreach ($cases as $case) {
         printf("Test message with len %d and limit %d: ", strlen($case['message']), $case['limit']);
-        $logTool = new LogTool($case['message'], $case['limit']);
-        $logTool->check($case['lines']);
+        $logTool = new LogTool();
+        $logTool->setExpectedChildMessage($case['message'], $case['limit']);
+        $logTool->checkChildMessage($case['lines']);
         if (!$logTool->getError()) {
             echo "OK\n";
         }

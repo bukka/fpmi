@@ -46,8 +46,9 @@ if (is_resource($fpmi)) {
 	$lines = fpmi_get_log_lines($tail, -1, true);
 	fclose($tail);
 	proc_close($fpmi);
-	$logtool = new FPMI\LogTool(str_repeat('a', 2048), 1050);
-	$logtool->check($lines);
+	$logtool = new FPMI\LogTool();
+	$logtool->setExpectedChildMessage(str_repeat('a', 2048), 1050);
+	$logtool->checkChildMessage($lines);
 }
 
 ?>

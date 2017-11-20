@@ -29,18 +29,15 @@ EOT;
 
 $tester = new FPMI\Tester($cfg, $code);
 $tester->start();
-$tester->displayLog(2);
+$tester->expectLogStartNotices();
 var_dump($tester->request());
 $tester->terminate();
-$logtool = new FPMI\LogTool('a', 8000, 4096);
-$logtool->check($tester->getLogLines(-1, true));
+$tester->expectLogChildMessage('a', 8000, 4096);
 $tester->close();
 
 ?>
 Done
 --EXPECTF--
-[%s] NOTICE: fpmi is running, pid %d
-[%s] NOTICE: ready to handle connections
 string(72) "X-Powered-By: PHP/%a
 Content-type: text/html; charset=%s
 

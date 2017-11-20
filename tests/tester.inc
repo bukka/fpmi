@@ -19,6 +19,11 @@ class Tester
     private $client;
 
     /**
+     * @var LogTool
+     */
+    private $logTool;
+
+    /**
      * Configuration template
      *
      * @var string
@@ -135,6 +140,7 @@ class Tester
         $this->options = $options;
         $this->fileName = self::getCallerFileName();
         $this->client = new Client($this->getHost(), $this->getPort());
+        $this->logTool = new LogTool();
     }
 
     /**
@@ -356,5 +362,24 @@ class Tester
             echo '; EXCEPTION: ' . $exception->getMessage();
         }
         echo "\n";
+    }
+
+    /**
+     * Expect starting lines to be logged
+     */
+    public function expectLogStartNotices()
+    {
+        $this->logTool->expectStartingLines($this->getLogLines(2));
+    }
+
+    /**
+     * @param string $message
+     * @param int $limit
+     * @param int $repeat
+     */
+    public function expectLogChildMessage(string $message, int $limit, int $repeat = 0)
+    {
+        $this->logTool->setExpectedChildMessage($message, $limit, $repeat);
+        $this->logTool->checkChildMessage($this->getLogLines(-1, true));
     }
 }
