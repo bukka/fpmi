@@ -5,6 +5,7 @@ namespace FPMI;
 use Adoy\FastCGI\Client;
 
 require_once 'fcgi.inc';
+require_once "logtool.inc";
 
 class Tester
 {

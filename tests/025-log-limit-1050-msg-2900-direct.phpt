@@ -6,7 +6,6 @@ FPMI: Log limit 1050 with 2900 msg
 <?php
 
 require_once "tester.inc";
-require_once "logtool.inc";
 
 $cfg = <<<EOT
 [global]
@@ -34,7 +33,6 @@ var_dump($tester->request());
 $tester->terminate();
 $tester->expectLogChildMessage('a', 1050, 2900);
 $tester->close();
-
 
 ?>
 Done
