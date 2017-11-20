@@ -63,6 +63,7 @@ struct zlog_stream {
 	unsigned int prefix_buffer:1;
 	unsigned int finished:1;
 	unsigned int wrap:1;
+	unsigned int msg_quote:1;
 	int fd;
 	int line;
 	const char *function;
@@ -70,21 +71,22 @@ struct zlog_stream {
 	size_t buf_size;
 	char *buf;
 	size_t prefix_len;
-	char *wrap_prefix;
-	size_t wrap_prefix_len;
-	char *wrap_suffix;
-	size_t wrap_suffix_len;
-	char *wrap_final_suffix;
-	size_t wrap_final_suffix_len;
+	char *msg_prefix;
+	size_t msg_prefix_len;
+	char *msg_suffix;
+	size_t msg_suffix_len;
+	char *msg_final_suffix;
+	size_t msg_final_suffix_len;
 
 };
 
 void zlog_stream_init(struct zlog_stream *stream, int flags);
 void zlog_stream_init_for_msg(struct zlog_stream *stream, int flags, size_t msg_len);
 void zlog_stream_init_for_stdio(struct zlog_stream *stream, int flags, int fd);
-ssize_t zlog_stream_set_wrapping_prefix(struct zlog_stream *stream, const char *fmt, ...)
+void zlog_stream_set_msg_quoting(struct zlog_stream *stream, zlog_bool quote);
+ssize_t zlog_stream_set_msg_prefix(struct zlog_stream *stream, const char *fmt, ...)
 		__attribute__ ((format(printf,2,3)));
-ssize_t zlog_stream_set_wrapping_suffix(
+ssize_t zlog_stream_set_msg_suffix(
 		struct zlog_stream *stream, const char *suffix, const char *final_suffix);
 #define zlog_stream_prefix(stream) \
 	zlog_stream_prefix_ex(stream, __func__, __LINE__)

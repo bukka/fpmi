@@ -196,9 +196,10 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 					}
 
 					if (init_stream_prefix_and_suffix) {
-						zlog_stream_set_wrapping_prefix(&stream, "[pool %s] child %d said into %s: \"",
+						zlog_stream_set_msg_prefix(&stream, "[pool %s] child %d said into %s: ",
 								child->wp->config->name, (int) child->pid, is_stdout ? "stdout" : "stderr");
-						zlog_stream_set_wrapping_suffix(&stream, "\"", ", pipe is closed");
+						zlog_stream_set_msg_suffix(&stream, NULL, ", pipe is closed");
+						zlog_stream_set_msg_quoting(&stream, 1);
 						init_stream_prefix_and_suffix = 0;
 					}
 					zlog_stream_str(&stream, buf, strlen(buf));
