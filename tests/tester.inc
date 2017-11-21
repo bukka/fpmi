@@ -5,7 +5,8 @@ namespace FPMI;
 use Adoy\FastCGI\Client;
 
 require_once 'fcgi.inc';
-require_once "logtool.inc";
+require_once 'logtool.inc';
+require_once 'response.inc';
 
 class Tester
 {
@@ -119,7 +120,6 @@ class Tester
 
         // try local php-fpmi
         $fpmiPath = dirname(__DIR__) . '/php-fpmi';
-        echo $fpmiPath;
         if (file_exists($fpmiPath) && is_executable($fpmiPath)) {
             return $fpmiPath;
         }
@@ -188,7 +188,7 @@ class Tester
      * @param string $uri
      * @param string $query
      * @param array $headers
-     * @return string
+     * @return Response
      */
     public function request(string $query = '', array $headers = [], string $uri = null)
     {
@@ -220,9 +220,10 @@ class Tester
         );
 
         try {
-            return $this->client->request($params, false) . "\n";
+            return new Response($this->client->request($params, false));
         } catch (\Exception $exception) {
             $this->error("Request failed", $exception);
+            return new Response();
         }
     }
 

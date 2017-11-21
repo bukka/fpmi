@@ -5,19 +5,14 @@ FPMI: Log limit 1050 with 2048 msg
 --FILE--
 <?php
 
-require_once "include.inc";
-require_once "logtool.inc";
-
-$logfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.log';
-$srcfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.php';
-$port = 9000+PHP_INT_SIZE;
+require_once "tester.inc";
 
 $cfg = <<<EOT
 [global]
-error_log = $logfile
+error_log = {{FILE:LOG}}
 log_limit = 1050
 [unconfined]
-listen = 127.0.0.1:$port
+listen = {{ADDR}}
 pm = dynamic
 pm.max_children = 5
 pm.start_servers = 1
@@ -30,43 +25,21 @@ $code = <<<EOT
 <?php
 file_put_contents('php://stderr', str_repeat('a', 2048) . "\n");
 EOT;
-file_put_contents($srcfile, $code);
 
-$fpmi = run_fpmi($cfg, $tail);
-if (is_resource($fpmi)) {
-	fpmi_display_log($tail, 2);
-	try {
-		$req = run_request('127.0.0.1', $port, $srcfile);
-		var_dump($req);
-		echo "Request ok\n";
-	} catch (Exception $e) {
-		echo "Request error\n";
-	}
-	proc_terminate($fpmi);
-	$lines = fpmi_get_log_lines($tail, -1, true);
-	fclose($tail);
-	proc_close($fpmi);
-	$logtool = new FPMI\LogTool();
-	$logtool->setExpectedChildMessage(str_repeat('a', 2048), 1050);
-	$logtool->checkChildMessage($lines);
-}
+$tester = new FPMI\Tester($cfg, $code);
+$tester->start();
+$tester->expectLogStartNotices();
+$tester->request()->expectEmptyBody();
+$tester->terminate();
+$tester->expectLogChildMessage('a', 1050, 2048);
+$tester->close();
 
 ?>
 Done
---EXPECTF--
-[%s] NOTICE: fpmi is running, pid %d
-[%s] NOTICE: ready to handle connections
-string(72) "X-Powered-By: PHP/%a
-Content-type: text/html; charset=%s
-
-
-"
-Request ok
+--EXPECT--
 Done
 --CLEAN--
 <?php
-$logfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.log';
-$srcfile = __DIR__.'/php-fpmi-025-log-limit-1050-direct.php';
-@unlink($logfile);
-@unlink($srcfile);
+require_once "tester.inc";
+FPMI\Tester::clean();
 ?>

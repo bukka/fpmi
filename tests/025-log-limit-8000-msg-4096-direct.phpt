@@ -29,19 +29,14 @@ EOT;
 $tester = new FPMI\Tester($cfg, $code);
 $tester->start();
 $tester->expectLogStartNotices();
-var_dump($tester->request());
+$tester->request()->expectEmptyBody();
 $tester->terminate();
 $tester->expectLogChildMessage('a', 8000, 4096);
 $tester->close();
 
 ?>
 Done
---EXPECTF--
-string(72) "X-Powered-By: PHP/%a
-Content-type: text/html; charset=%s
-
-
-"
+--EXPECT--
 Done
 --CLEAN--
 <?php

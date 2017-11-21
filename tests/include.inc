@@ -25,7 +25,6 @@ function get_fpmi_path() /* {{{ */
 
     // try local php-fpmi
     $fpmi_path = dirname(__DIR__) . '/php-fpmi';
-    echo $fpmi_path;
     if (file_exists($fpmi_path) && is_executable($fpmi_path)) {
         return $fpmi_path;
     }
