@@ -32,7 +32,7 @@ struct fpmi_global_config_s {
 #endif
 	int log_level;
 	int log_limit;
-	int worker_output_limit;
+	int log_buffering;
 	int emergency_restart_threshold;
 	int emergency_restart_interval;
 	int process_control_timeout;
@@ -87,6 +87,7 @@ struct fpmi_worker_pool_config_s {
 	char *chroot;
 	char *chdir;
 	int catch_workers_output;
+	int decorate_workers_output;
 	int clear_env;
 	char *security_limit_extensions;
 	struct key_value_s *env;

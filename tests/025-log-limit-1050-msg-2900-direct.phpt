@@ -11,6 +11,7 @@ $cfg = <<<EOT
 [global]
 error_log = {{FILE:LOG}}
 log_limit = 1050
+log_buffering = no
 [unconfined]
 listen = {{ADDR}}
 pm = dynamic

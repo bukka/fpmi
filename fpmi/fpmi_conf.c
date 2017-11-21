@@ -81,6 +81,7 @@ struct fpmi_global_config_s fpmi_global_config = {
 	.systemd_watchdog = 0,
 	.systemd_interval = -1, /* -1 means not set */
 #endif
+	.log_buffering = ZLOG_DEFAULT_BUFFERING,
 	.log_limit = ZLOG_DEFAULT_LIMIT
 };
 static struct fpmi_worker_pool_s *current_wp = NULL;
@@ -99,9 +100,9 @@ static struct ini_value_parser_s ini_fpmi_global_options[] = {
 	{ "syslog.ident",                &fpmi_conf_set_string,          GO(syslog_ident) },
 	{ "syslog.facility",             &fpmi_conf_set_syslog_facility, GO(syslog_facility) },
 #endif
+	{ "log_buffering",               &fpmi_conf_set_boolean,         GO(log_buffering) },
 	{ "log_level",                   &fpmi_conf_set_log_level,       GO(log_level) },
 	{ "log_limit",                   &fpmi_conf_set_integer,         GO(log_limit) },
-	{ "worker_output_limit",         &fpmi_conf_set_integer,         GO(worker_output_limit) },
 	{ "emergency_restart_threshold", &fpmi_conf_set_integer,         GO(emergency_restart_threshold) },
 	{ "emergency_restart_interval",  &fpmi_conf_set_time,            GO(emergency_restart_interval) },
 	{ "process_control_timeout",     &fpmi_conf_set_time,            GO(process_control_timeout) },
@@ -156,6 +157,7 @@ static struct ini_value_parser_s ini_fpmi_pool_options[] = {
 	{ "chroot",                    &fpmi_conf_set_string,      WPO(chroot) },
 	{ "chdir",                     &fpmi_conf_set_string,      WPO(chdir) },
 	{ "catch_workers_output",      &fpmi_conf_set_boolean,     WPO(catch_workers_output) },
+	{ "decorate_workers_output",   &fpmi_conf_set_boolean,     WPO(decorate_workers_output) },
 	{ "clear_env",                 &fpmi_conf_set_boolean,     WPO(clear_env) },
 	{ "security.limit_extensions", &fpmi_conf_set_string,      WPO(security_limit_extensions) },
 #ifdef HAVE_APPARMOR
@@ -1195,6 +1197,7 @@ static int fpmi_conf_post_process(int force_daemon) /* {{{ */
 	fpmi_globals.log_level = fpmi_global_config.log_level;
 	zlog_set_level(fpmi_globals.log_level);
 	zlog_set_limit(fpmi_global_config.log_limit);
+	zlog_set_buffering(fpmi_global_config.log_buffering);
 
 	if (fpmi_global_config.process_max < 0) {
 		zlog(ZLOG_ERROR, "process_max can't be negative");
@@ -1610,6 +1613,7 @@ static void fpmi_conf_dump() /* {{{ */
 	zlog(ZLOG_NOTICE, "\tsyslog.ident = %s",                STR2STR(fpmi_global_config.syslog_ident));
 	zlog(ZLOG_NOTICE, "\tsyslog.facility = %d",             fpmi_global_config.syslog_facility); /* FIXME: convert to string */
 #endif
+	zlog(ZLOG_NOTICE, "\tlog_buffering = %s",               BOOL2STR(fpmi_global_config.log_buffering));
 	zlog(ZLOG_NOTICE, "\tlog_level = %s",                   zlog_get_level_name(fpmi_globals.log_level));
 	zlog(ZLOG_NOTICE, "\tlog_limit = %d",                   fpmi_global_config.log_limit);
 	zlog(ZLOG_NOTICE, "\tworkers_output_limit = %d",        fpmi_globals.workers_output_limit);
@@ -1674,6 +1678,7 @@ static void fpmi_conf_dump() /* {{{ */
 		zlog(ZLOG_NOTICE, "\tchroot = %s",                     STR2STR(wp->config->chroot));
 		zlog(ZLOG_NOTICE, "\tchdir = %s",                      STR2STR(wp->config->chdir));
 		zlog(ZLOG_NOTICE, "\tcatch_workers_output = %s",       BOOL2STR(wp->config->catch_workers_output));
+		zlog(ZLOG_NOTICE, "\tdecorate_workers_output = %s",    BOOL2STR(wp->config->decorate_workers_output));
 		zlog(ZLOG_NOTICE, "\tclear_env = %s",                  BOOL2STR(wp->config->clear_env));
 		zlog(ZLOG_NOTICE, "\tsecurity.limit_extensions = %s",  wp->config->security_limit_extensions);
 

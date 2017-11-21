@@ -13,10 +13,13 @@
 
 struct timeval;
 
+typedef unsigned char zlog_bool;
+
 void zlog_set_external_logger(void (*logger)(int, char *, size_t));
 int zlog_set_fd(int new_fd);
 int zlog_set_level(int new_value);
 int zlog_set_limit(int new_value);
+int zlog_set_buffering(zlog_bool buffering);
 const char *zlog_get_level_name(int log_level);
 void zlog_set_launched(void);
 
@@ -51,8 +54,6 @@ enum {
 #define ZLOG_SYSLOG -2
 
 /* STREAM */
-
-typedef unsigned char zlog_bool;
 
 struct zlog_stream {
 	int flags;
@@ -100,5 +101,8 @@ void zlog_stream_destroy(struct zlog_stream *stream);
 
 /* default log limit */
 #define ZLOG_DEFAULT_LIMIT 1024
+
+/* default log buffering */
+#define ZLOG_DEFAULT_BUFFERING 1
 
 #endif

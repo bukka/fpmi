@@ -29,6 +29,7 @@
 static int zlog_fd = -1;
 static int zlog_level = ZLOG_NOTICE;
 static int zlog_limit = ZLOG_DEFAULT_LIMIT;
+static zlog_bool zlog_buffering = ZLOG_DEFAULT_BUFFERING;
 static int launched = 0;
 static void (*external_logger)(int, char *, size_t) = NULL;
 
@@ -111,6 +112,15 @@ int zlog_set_limit(int new_value) /* {{{ */
 	int old_value = zlog_limit;
 
 	zlog_limit = new_value;
+	return old_value;
+}
+/* }}} */
+
+int zlog_set_buffering(zlog_bool buffering) /* {{{ */
+{
+	int old_value = zlog_buffering;
+
+	zlog_buffering = buffering;
 	return old_value;
 }
 /* }}} */

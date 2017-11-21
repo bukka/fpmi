@@ -11,6 +11,7 @@ $cfg = <<<EOT
 [global]
 error_log = {{FILE:LOG}}
 log_limit = 1050
+log_buffering = no
 [unconfined]
 listen = {{ADDR}}
 pm = dynamic
@@ -19,6 +20,7 @@ pm.start_servers = 1
 pm.min_spare_servers = 1
 pm.max_spare_servers = 3
 catch_workers_output = yes
+decorate_workers_output = yes
 EOT;
 
 $code = <<<EOT
