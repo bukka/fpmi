@@ -101,6 +101,8 @@ void zlog_stream_destroy(struct zlog_stream *stream);
 
 /* default log limit */
 #define ZLOG_DEFAULT_LIMIT 1024
+/* minimum log limit */
+#define ZLOG_MIN_LIMIT 512
 
 /* default log buffering */
 #define ZLOG_DEFAULT_BUFFERING 1

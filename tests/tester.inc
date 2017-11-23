@@ -269,6 +269,16 @@ class Tester
     }
 
     /**
+     * @return mixed|string
+     */
+    public function getLastLogLine()
+    {
+        $lines = $this->getLogLines();
+
+        return $lines[0] ?? '';
+    }
+
+    /**
      * Terminate master process
      */
     public function terminate()
@@ -278,9 +288,14 @@ class Tester
 
     /**
      * Close all open descriptors and process resources
+     *
+     * @param bool $terminate
      */
-    public function close()
+    public function close($terminate = false)
     {
+        if ($terminate) {
+            $this->terminate();
+        }
         fclose($this->outDesc);
         proc_close($this->masterProcess);
     }
@@ -383,5 +398,45 @@ class Tester
     {
         $this->logTool->setExpectedChildMessage($message, $limit, $repeat);
         $this->logTool->checkChildMessage($this->getLogLines(-1, true));
+    }
+
+    /**
+     * @param string $message
+     */
+    public function expectLogDebug(string $message)
+    {
+        $this->logTool->expectDebug($this->getLastLogLine(), $message);
+    }
+
+    /**
+     * @param string $message
+     */
+    public function expectLogNotice(string $message)
+    {
+        $this->logTool->expectNotice($this->getLastLogLine(), $message);
+    }
+
+    /**
+     * @param string $message
+     */
+    public function expectLogWarning(string $message)
+    {
+        $this->logTool->expectWarning($this->getLastLogLine(), $message);
+    }
+
+    /**
+     * @param string $message
+     */
+    public function expectLogError(string $message)
+    {
+        $this->logTool->expectError($this->getLastLogLine(), $message);
+    }
+
+    /**
+     * @param string $message
+     */
+    public function expectLogAlert(string $message)
+    {
+        $this->logTool->expectAlert($this->getLastLogLine(), $message);
     }
 }

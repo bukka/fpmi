@@ -1196,6 +1196,10 @@ static int fpmi_conf_post_process(int force_daemon) /* {{{ */
 
 	fpmi_globals.log_level = fpmi_global_config.log_level;
 	zlog_set_level(fpmi_globals.log_level);
+	if (fpmi_global_config.log_limit < ZLOG_MIN_LIMIT) {
+		zlog(ZLOG_ERROR, "log_limit must be greater than %d", ZLOG_MIN_LIMIT);
+		return -1;
+	}
 	zlog_set_limit(fpmi_global_config.log_limit);
 	zlog_set_buffering(fpmi_global_config.log_buffering);
 
