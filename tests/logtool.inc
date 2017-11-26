@@ -136,6 +136,10 @@ class LogTool
      */
     public function expectStartingLines(array $lines)
     {
+        if ($this->getError()) {
+            return false;
+        }
+
         if (count($lines) < 2) {
             return $this->error("No starting lines");
         }
@@ -153,6 +157,10 @@ class LogTool
      */
     public function expectTerminatorLines(array $lines, int $idx)
     {
+        if ($this->getError()) {
+            return false;
+        }
+
         if (count($lines) - $idx < 3) {
             return $this->error("No terminating lines");
         }
@@ -171,6 +179,10 @@ class LogTool
      */
     public function expectEntry(string $type, string $line, string $expectedMessage)
     {
+        if ($this->getError()) {
+            return false;
+        }
+
         $line = rtrim($line);
         $pattern = sprintf('/^%s %s: %s$/', self::P_TIME, $type, $expectedMessage);
 

@@ -32,11 +32,18 @@ class Response
     private $valid;
 
     /**
-     * @param string|null $rawData
+     * @var bool
      */
-    public function __construct($rawData = null)
+    private $expectInvalid;
+
+    /**
+     * @param string|null $rawData
+     * @param bool $expectInvalid
+     */
+    public function __construct($rawData = null, $expectInvalid = false)
     {
         $this->rawData = $rawData;
+        $this->expectInvalid = $expectInvalid;
         if ($rawData === null || strpos($rawData, self::HEADER_SEPARATOR) === false) {
             $this->valid = false;
             return;
@@ -100,7 +107,15 @@ class Response
      */
     private function checkIfValid()
     {
-        return $this->valid ?: $this->error("The response is invalid: $this->rawData");
+        if ($this->valid) {
+            return true;
+        }
+
+        if (!$this->expectInvalid) {
+            $this->error("The response is invalid: $this->rawData");
+        }
+
+        return false;
     }
 
     /**

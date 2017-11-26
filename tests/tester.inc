@@ -60,6 +60,11 @@ class Tester
     private $outDesc;
 
     /**
+     * @var string
+     */
+    private $error;
+
+    /**
      * Clean all the created files up
      */
     static public function clean()
@@ -192,6 +197,10 @@ class Tester
      */
     public function request(string $query = '', array $headers = [], string $uri = null)
     {
+        if ($this->hasError()) {
+            return new Response(null, true);
+        }
+
         if (is_null($uri)) {
             $uri = $this->makeFile('src.php', $this->code);
         }
@@ -374,11 +383,21 @@ class Tester
      */
     private function error($msg, \Exception $exception = null)
     {
-        echo 'ERROR: ' . $msg;
+        $this->error =  'ERROR: ' . $msg;
         if ($exception) {
-            echo '; EXCEPTION: ' . $exception->getMessage();
+            $this->error .= '; EXCEPTION: ' . $exception->getMessage();
         }
-        echo "\n";
+        $this->error .= "\n";
+
+        echo $this->error;
+    }
+
+    /**
+     * @return bool
+     */
+    private function hasError()
+    {
+        return !is_null($this->error) || !is_null($this->logTool->getError());
     }
 
     /**
