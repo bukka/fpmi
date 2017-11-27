@@ -449,7 +449,7 @@ static inline void zlog_stream_init_ex(struct zlog_stream *stream, int flags, si
 	stream->flags = flags;
 	stream->use_syslog = fd == ZLOG_SYSLOG;
 	stream->use_fd = !stream->use_syslog;
-	stream->use_buffer = external_logger != NULL || stream->use_syslog;
+	stream->use_buffer = zlog_buffering || external_logger != NULL || stream->use_syslog;
 	/* TODO: require a minimal capacity when using buffer to make sure the prefix is not trimmed */
 	stream->buf_size = capacity;
 	stream->use_stderr = fd != STDERR_FILENO && fd != STDOUT_FILENO && fd != -1 &&
