@@ -62,6 +62,7 @@ class LogTool
             throw new \LogicException('The child message has not been set');
         }
 
+        $idx = 0;
         foreach ($lines as $idx => $line) {
             if (!$this->checkLine($line)) {
                 break;
@@ -80,7 +81,7 @@ class LogTool
         }
 
         if ($terminated) {
-            $this->expectTerminatorLines($lines, $idx);
+            return $this->expectTerminatorLines($lines, $idx);
         }
 
         return true;
