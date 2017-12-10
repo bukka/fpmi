@@ -361,10 +361,9 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 				if (stream->msg_suffix) {
 					zlog_stream_direct_write(stream, stream->msg_suffix, stream->msg_suffix_len);
 				}
+				zlog_stream_direct_write(stream, append, append_len);
 			}
-			zlog_stream_direct_write(stream, append, append_len);
 			stream->len = 0;
-			/* TODO: use loop to speed it up */
 			written = zlog_stream_unbuffered_write(stream, buf + available_len, len - available_len);
 			if (written > 0) {
 				return available_len + written;
@@ -373,6 +372,7 @@ static inline ssize_t zlog_stream_unbuffered_write(struct zlog_stream *stream, c
 			return written;
 		}
 		stream->finished = finished = 1;
+		/* TODO: msg_quote and msg_suffix should be attemted to write and possibly trimmed */
 		append = (required_len == zlog_limit) ? "\n" : "...\n";
 		append_len = sizeof(append) - 1;
 		len = zlog_limit - stream->len - append_len;
@@ -404,12 +404,14 @@ static inline ssize_t zlog_stream_buf_copy(struct zlog_stream *stream, const cha
 /* TODO: handle errors from this function in all calls (check for -1) */
 static ssize_t zlog_stream_buf_append(struct zlog_stream *stream, const char *str, size_t str_len)  /* {{{ */
 {
-	int finished = 0;
-	size_t available_len;
+	int over_limit = 0;
+	size_t available_len, required_len, reserved_len;
 
-	if (stream->len + str_len > zlog_limit) {
-		stream->finished = finished = 1;
-		available_len = zlog_limit - stream->len;
+	reserved_len = stream->len + stream->msg_suffix_len + stream->msg_quote;
+	required_len = reserved_len + str_len;
+	if (required_len >= zlog_limit) {
+		over_limit = 1;
+		available_len = zlog_limit - reserved_len - 1;
 	} else {
 		available_len = str_len;
 	}
@@ -418,24 +420,27 @@ static ssize_t zlog_stream_buf_append(struct zlog_stream *stream, const char *st
 		return -1;
 	}
 
-	if (!finished) {
+	if (!over_limit) {
 		return available_len;
 	}
 
 	if (stream->wrap) {
+		if (stream->msg_quote) {
+			zlog_stream_buf_copy(stream, "\"", 1);
+		}
 		if (stream->msg_suffix != NULL) {
 			zlog_stream_buf_copy(stream, stream->msg_suffix, stream->msg_suffix_len);
-			zlog_stream_buf_copy(stream, "\n", 1);
 		}
+		zlog_stream_buf_copy(stream, "\n", 1);
 		/* TODO: replace with proper write as it is in the finish (syslog and external logging) */
 		zlog_stream_direct_write(stream, stream->buf, stream->len);
 		stream->len = 0;
 		zlog_stream_prefix_ex(stream, stream->function, stream->line);
-		/* TODO: use loop to speed it up */
 		return available_len + zlog_stream_buf_append(stream, str + available_len, str_len - available_len);
 	}
 
 	stream->len = zlog_truncate_buf(stream->buf, stream->len);
+	stream->finished = 1;
 	return available_len;
 }
 
