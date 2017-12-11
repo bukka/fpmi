@@ -498,7 +498,7 @@ ssize_t zlog_stream_set_msg_prefix(struct zlog_stream *stream, const char *fmt, 
 	len = vsnprintf(buf, MAX_WRAPPING_PREFIX_LENGTH - 1, fmt, args);
 	va_end(args);
 
-	stream->msg_prefix = malloc(len);
+	stream->msg_prefix = malloc(len + 1);
 	if (stream->msg_prefix == NULL) {
 		return -1;
 	}
@@ -539,7 +539,7 @@ ssize_t zlog_stream_set_msg_suffix(
 	}
 	if (final_suffix != NULL) {
 		stream->msg_final_suffix_len = len = strlen(final_suffix);
-		stream->msg_final_suffix = malloc(len);
+		stream->msg_final_suffix = malloc(len + 1);
 		if (stream->msg_final_suffix == NULL) {
 			return -1;
 		}
