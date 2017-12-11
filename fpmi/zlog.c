@@ -273,13 +273,13 @@ void zlog_msg_ex(const char *function, int line, int flags,
 static zlog_bool zlog_stream_buf_alloc_ex(struct zlog_stream *stream, size_t needed)  /* {{{ */
 {
 	char *buf;
-	size_t size;
+	size_t size = stream->buf_size ?: stream->buf_init_size;
 
 	if (stream->buf) {
-		size = MIN(zlog_limit, MAX(stream->buf_size * 2, needed));
+		size = MIN(zlog_limit, MAX(size * 2, needed));
 		buf = realloc(stream->buf, size);
 	} else {
-		size = MIN(zlog_limit, MAX(stream->buf_size, needed));
+		size = MIN(zlog_limit, MAX(size, needed));
 		buf = malloc(size);
 	}
 
@@ -455,8 +455,7 @@ static inline void zlog_stream_init_ex(struct zlog_stream *stream, int flags, si
 	stream->use_syslog = fd == ZLOG_SYSLOG;
 	stream->use_fd = !stream->use_syslog;
 	stream->use_buffer = zlog_buffering || external_logger != NULL || stream->use_syslog;
-	/* TODO: require a minimal capacity when using buffer to make sure the prefix is not trimmed */
-	stream->buf_size = capacity;
+	stream->buf_init_size = capacity;
 	stream->use_stderr = fd != STDERR_FILENO && fd != STDOUT_FILENO && fd != -1 &&
 			!launched && (flags & ZLOG_LEVEL_MASK) >= ZLOG_NOTICE;
 	stream->prefix_buffer = (flags & ZLOG_LEVEL_MASK) >= zlog_level;

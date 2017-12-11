@@ -70,6 +70,7 @@ struct zlog_stream {
 	const char *function;
 	size_t len;
 	size_t buf_size;
+	size_t buf_init_size;
 	char *buf;
 	size_t prefix_len;
 	char *msg_prefix;
@@ -78,7 +79,6 @@ struct zlog_stream {
 	size_t msg_suffix_len;
 	char *msg_final_suffix;
 	size_t msg_final_suffix_len;
-
 };
 
 void zlog_stream_init(struct zlog_stream *stream, int flags);
