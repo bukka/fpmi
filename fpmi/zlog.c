@@ -660,14 +660,14 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 		stream->buf[stream->len++] = '\n';
 		zlog_stream_direct_write(stream, stream->buf, stream->len);
 	} else if (!stream->finished) {
+		if (stream->msg_quote) {
+			zlog_stream_direct_write(stream, "\"", 1);
+			++stream->len;
+		}
 		if (stream->msg_suffix != NULL) {
 			/* we should always have space for wrap suffix so we don't have to check it */
 			zlog_stream_direct_write(stream, stream->msg_suffix, stream->msg_suffix_len);
 			stream->len += stream->msg_suffix_len;
-		}
-		if (stream->msg_quote) {
-			zlog_stream_direct_write(stream, "\"", 1);
-			++stream->len;
 		}
 		if (stream->msg_final_suffix != NULL) {
 			if (stream->len + stream->msg_final_suffix_len >= zlog_limit) {
