@@ -407,6 +407,10 @@ static ssize_t zlog_stream_buf_append(struct zlog_stream *stream, const char *st
 	int over_limit = 0;
 	size_t available_len, required_len, reserved_len;
 
+	if (stream->len == 0) {
+		stream->len = zlog_stream_prefix_ex(stream, stream->function, stream->line);
+	}
+
 	reserved_len = stream->len + stream->msg_suffix_len + stream->msg_quote;
 	required_len = reserved_len + str_len;
 	if (required_len >= zlog_limit) {
@@ -633,6 +637,12 @@ ssize_t zlog_stream_str(struct zlog_stream *stream, const char *str, size_t str_
 zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 {
 	if (stream->use_buffer) {
+		if (stream->msg_quote) {
+			zlog_stream_buf_copy(stream, "\"", 1);
+		}
+		if (stream->msg_suffix != NULL) {
+			zlog_stream_buf_copy(stream, stream->msg_suffix, stream->msg_suffix_len);
+		}
 		if (stream->msg_final_suffix != NULL) {
 			zlog_stream_buf_copy(stream, stream->msg_final_suffix, stream->msg_final_suffix_len);
 		}
