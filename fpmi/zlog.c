@@ -649,6 +649,10 @@ ssize_t zlog_stream_str(struct zlog_stream *stream, const char *str, size_t str_
 
 zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 {
+	if (stream->len == 0) {
+		stream->finished = 1;
+		return 1;
+	}
 	if (stream->use_buffer) {
 		if (stream->msg_quote) {
 			zlog_stream_buf_copy_char(stream, '"');
@@ -657,6 +661,7 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 			zlog_stream_buf_copy_cstr(stream, stream->msg_suffix, stream->msg_suffix_len);
 		}
 		if (stream->msg_final_suffix != NULL) {
+			/* TODO: wrap final suffix if needed */
 			zlog_stream_buf_copy_cstr(stream, stream->msg_final_suffix, stream->msg_final_suffix_len);
 		}
 		if (external_logger != NULL) {
