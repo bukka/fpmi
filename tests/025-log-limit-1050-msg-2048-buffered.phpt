@@ -1,5 +1,5 @@
 --TEST--
-FPMI: Log limit 1050 with 2048 msg
+FPMI: Log limit 1050 with 2048 msg using buffering
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
