@@ -414,6 +414,29 @@ static inline ssize_t zlog_stream_buf_copy_char(struct zlog_stream *stream, char
 }
 /* }}} */
 
+static ssize_t zlog_stream_buf_flush(struct zlog_stream *stream) /* {{{ */
+{
+	ssize_t written;
+
+	if (external_logger != NULL) {
+		external_logger(stream->flags & ZLOG_LEVEL_MASK,
+				stream->buf + stream->prefix_len, stream->len - stream->prefix_len);
+	}
+
+#ifdef HAVE_SYSLOG_H
+	if (stream->use_syslog) {
+		zlog_stream_buf_copy_char(stream, '\0');
+		php_syslog(syslog_priorities[zlog_level], "%s", stream->buf);
+		--stream->len;
+	}
+#endif
+	zlog_stream_buf_copy_char(stream, '\n');
+	written = zlog_stream_direct_write(stream, stream->buf, stream->len);
+	stream->len = 0;
+
+	return written;
+}
+
 /* TODO: handle errors from this function in all calls (check for -1) */
 static ssize_t zlog_stream_buf_append(struct zlog_stream *stream, const char *str, size_t str_len)  /* {{{ */
 {
@@ -449,9 +472,7 @@ static ssize_t zlog_stream_buf_append(struct zlog_stream *stream, const char *st
 			zlog_stream_buf_copy_cstr(stream, stream->msg_suffix, stream->msg_suffix_len);
 		}
 		zlog_stream_buf_copy_char(stream, '\n');
-		/* TODO: replace with proper write as it is in the finish (syslog and external logging) */
-		zlog_stream_direct_write(stream, stream->buf, stream->len);
-		stream->len = 0;
+		zlog_stream_buf_flush(stream);
 		zlog_stream_prefix_ex(stream, stream->function, stream->line);
 		return available_len + zlog_stream_buf_append(stream, str + available_len, str_len - available_len);
 	}
@@ -661,23 +682,25 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 			zlog_stream_buf_copy_cstr(stream, stream->msg_suffix, stream->msg_suffix_len);
 		}
 		if (stream->msg_final_suffix != NULL) {
-			/* TODO: wrap final suffix if needed */
-			zlog_stream_buf_copy_cstr(stream, stream->msg_final_suffix, stream->msg_final_suffix_len);
+			if (stream->len + stream->msg_final_suffix_len >= zlog_limit) {
+				zlog_bool quoting = stream->msg_quote;
+				size_t extra_final_suffix = stream->len + stream->msg_final_suffix_len + 1 - zlog_limit;
+				zlog_stream_buf_copy_cstr(
+						stream, stream->msg_final_suffix, stream->msg_final_suffix_len - extra_final_suffix);
+				zlog_stream_buf_copy_char(stream, '\n');
+				zlog_stream_buf_flush(stream);
+				stream->msg_quote = 0;
+				zlog_stream_prefix_ex(stream, stream->function, stream->line);
+				stream->msg_quote = quoting;
+				zlog_stream_buf_copy_cstr(
+						stream, stream->msg_final_suffix + (stream->msg_final_suffix_len - extra_final_suffix),
+						extra_final_suffix);
+				zlog_stream_buf_copy_char(stream, '\n');
+			} else {
+				zlog_stream_buf_copy_cstr(stream, stream->msg_final_suffix, stream->msg_final_suffix_len);
+			}
 		}
-		if (external_logger != NULL) {
-			external_logger(stream->flags & ZLOG_LEVEL_MASK,
-					stream->buf + stream->prefix_len, stream->len - stream->prefix_len);
-		}
-
-#ifdef HAVE_SYSLOG_H
-		if (stream->use_syslog) {
-			zlog_stream_buf_copy_char(stream, '\0');
-			php_syslog(syslog_priorities[zlog_level], "%s", stream->buf);
-			--stream->len;
-		}
-#endif
-		zlog_stream_buf_copy_char(stream, '\n');
-		zlog_stream_direct_write(stream, stream->buf, stream->len);
+		zlog_stream_buf_flush(stream);
 	} else if (!stream->finished) {
 		if (stream->msg_quote) {
 			zlog_stream_direct_write(stream, "\"", 1);
