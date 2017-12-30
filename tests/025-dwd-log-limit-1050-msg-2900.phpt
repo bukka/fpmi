@@ -1,5 +1,5 @@
 --TEST--
-FPMI: Log limit 8000 with 4096 msg using buffered write
+FPMI: Direct worker output decorated log with limit 1050 with 2900 msg
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -10,8 +10,8 @@ require_once "tester.inc";
 $cfg = <<<EOT
 [global]
 error_log = {{FILE:LOG}}
-log_limit = 8000
-log_buffering = yes
+log_limit = 1050
+log_buffering = no
 [unconfined]
 listen = {{ADDR}}
 pm = dynamic
@@ -24,7 +24,7 @@ EOT;
 
 $code = <<<EOT
 <?php
-file_put_contents('php://stderr', str_repeat('a', 4096) . "\n");
+file_put_contents('php://stderr', str_repeat('a', 2900) . "\n");
 EOT;
 
 $tester = new FPMI\Tester($cfg, $code);
@@ -32,7 +32,7 @@ $tester->start();
 $tester->expectLogStartNotices();
 $tester->request()->expectEmptyBody();
 $tester->terminate();
-$tester->expectLogChildMessage('a', 8000, 4096);
+$tester->expectLogChildMessage('a', 1050, 2900);
 $tester->close();
 
 ?>

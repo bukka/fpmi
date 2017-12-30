@@ -1,5 +1,5 @@
 --TEST--
-FPMI: Log limit 8000 with 4096 msg using direct write
+FPMI: Buffered worker output decorated log with limit 64 fails because it is too low
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
@@ -10,8 +10,7 @@ require_once "tester.inc";
 $cfg = <<<EOT
 [global]
 error_log = {{FILE:LOG}}
-log_limit = 8000
-log_buffering = no
+log_limit = 64
 [unconfined]
 listen = {{ADDR}}
 pm = dynamic
@@ -24,16 +23,13 @@ EOT;
 
 $code = <<<EOT
 <?php
-file_put_contents('php://stderr', str_repeat('a', 4096) . "\n");
+file_put_contents('php://stderr', str_repeat('a', 2048) . "\n");
 EOT;
 
 $tester = new FPMI\Tester($cfg, $code);
 $tester->start();
-$tester->expectLogStartNotices();
-$tester->request()->expectEmptyBody();
-$tester->terminate();
-$tester->expectLogChildMessage('a', 8000, 4096);
-$tester->close();
+$tester->expectLogError('log_limit must be greater than 512');
+$tester->close(true);
 
 ?>
 Done
