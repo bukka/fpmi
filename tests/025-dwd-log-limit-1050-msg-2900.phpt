@@ -32,7 +32,7 @@ $tester->start();
 $tester->expectLogStartNotices();
 $tester->request()->expectEmptyBody();
 $tester->terminate();
-$tester->expectLogChildMessage('a', 1050, 2900);
+$tester->expectLogMessage('a', 1050, 2900);
 $tester->close();
 
 ?>

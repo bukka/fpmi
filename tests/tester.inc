@@ -412,8 +412,9 @@ class Tester
      * @param string $message
      * @param int $limit
      * @param int $repeat
+     * @param bool $wrapped
      */
-    public function expectLogChildMessage(string $message, int $limit, int $repeat = 0)
+    public function expectLogMessage(string $message, int $limit, int $repeat = 0, bool $wrapped = false)
     {
         $this->logTool->setExpectedChildMessage($message, $limit, $repeat);
         $this->logTool->checkChildMessage($this->getLogLines(-1, true));
