@@ -43,7 +43,7 @@ class LogTool
      * @param int $limit
      * @param int $repeat
      */
-    public function setExpectedChildMessage(string $message, int $limit, int $repeat = 0)
+    public function setExpectedMessage(string $message, int $limit, int $repeat = 0)
     {
         $this->message = ($repeat > 0) ? str_repeat($message, $repeat) : $message;
         $this->limit = $limit;
@@ -56,7 +56,7 @@ class LogTool
      * @param bool $terminated
      * @return bool
      */
-    public function checkChildMessage(array $lines, bool $terminated = true)
+    public function checkWrappedMessage(array $lines, bool $terminated = true)
     {
         if ($this->message === null) {
             throw new \LogicException('The child message has not been set');
@@ -292,8 +292,8 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
     foreach ($cases as $case) {
         printf("Test message with len %d and limit %d: ", strlen($case['message']), $case['limit']);
         $logTool = new LogTool();
-        $logTool->setExpectedChildMessage($case['message'], $case['limit']);
-        $logTool->checkChildMessage($case['lines']);
+        $logTool->setExpectedMessage($case['message'], $case['limit']);
+        $logTool->checkWrappedMessage($case['lines']);
         if (!$logTool->getError()) {
             echo "OK\n";
         }

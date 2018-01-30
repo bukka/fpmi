@@ -414,10 +414,12 @@ class Tester
      * @param int $repeat
      * @param bool $wrapped
      */
-    public function expectLogMessage(string $message, int $limit, int $repeat = 0, bool $wrapped = false)
+    public function expectLogMessage(string $message, int $limit, int $repeat = 0, bool $wrapped = true)
     {
-        $this->logTool->setExpectedChildMessage($message, $limit, $repeat);
-        $this->logTool->checkChildMessage($this->getLogLines(-1, true));
+        $this->logTool->setExpectedMessage($message, $limit, $repeat);
+        if ($wrapped) {
+            $this->logTool->checkWrappedMessage($this->getLogLines(-1, true));
+        }
     }
 
     /**
