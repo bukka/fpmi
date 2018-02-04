@@ -281,8 +281,8 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
             'lines' => [
                 '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 968) . '"',
                 '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 968) . '"',
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 964) . '", pip',
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: e is closed',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 964) . '", pi',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: pe is closed',
                 '[08-Oct-2017 19:53:55] NOTICE: Terminating ...',
                 '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
             ],
