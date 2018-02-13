@@ -5,13 +5,18 @@ namespace FPMI;
 class LogTool
 {
     const P_TIME = '\[\d\d-\w\w\w-\d{4} \d\d:\d\d:\d\d\]';
-    const P_PREFIX = 'WARNING: \[pool unconfined\] child \d+ said into stderr: ';
+    const P_PREFIX = '\[pool unconfined\] child \d+ said into stderr: ';
     const FINAL_SUFFIX = ', pipe is closed';
 
     /**
      * @var string
      */
     private $message;
+
+    /**
+     * @var string
+     */
+    private $level;
 
     /**
      * @var int
@@ -48,7 +53,52 @@ class LogTool
         $this->message = ($repeat > 0) ? str_repeat($message, $repeat) : $message;
         $this->limit = $limit;
         $this->position = 0;
-        $this->pattern = sprintf('/^(%s %s)"([^"]*)"(.*)?$/', self::P_TIME, self::P_PREFIX);
+    }
+
+    /**
+     * @return int
+     * @todo should be probably part of the message check methods
+     */
+    public function setExpectedLevel(string $level)
+    {
+        return $this->level = $level;
+    }
+
+    /**
+     * @return string
+     */
+    public function getExpectedLevel(): string
+    {
+        return $this->level ?: 'WARNING';
+    }
+
+    /**
+     * @param array $lines
+     * @param bool $terminated
+     * @return bool
+     */
+    public function checkTruncatedMessage(array $lines, bool $terminated = true)
+    {
+        if ($this->message === null) {
+            throw new \LogicException('The message has not been set');
+        }
+        $this->pattern = sprintf(
+            '/^(%s %s: )(.*)(\.\.\.)?$/',
+            self::P_TIME,
+            $this->getExpectedLevel()
+        );
+        if (preg_match($this->pattern, $lines[0], $matches) === 0) {
+            return $this->error("Unexpected truncated message: {$lines[0]}");
+        }
+
+        //TODO: add checks for line length and if 3 dots are correctly used (e.g. only for longer messages)
+
+
+        if ($terminated) {
+            return $this->expectTerminatorLines($lines, 0);
+        }
+
+        return true;
     }
 
     /**
@@ -59,8 +109,14 @@ class LogTool
     public function checkWrappedMessage(array $lines, bool $terminated = true)
     {
         if ($this->message === null) {
-            throw new \LogicException('The child message has not been set');
+            throw new \LogicException('The message has not been set');
         }
+        $this->pattern = sprintf(
+            '/^(%s %s: %s)"([^"]*)"(.*)?$/',
+            self::P_TIME,
+            $this->getExpectedLevel(),
+            self::P_PREFIX
+        );
 
         $idx = 0;
         foreach ($lines as $idx => $line) {
@@ -275,6 +331,7 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
                 '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
             ],
             'message' => str_repeat('a', 2048),
+            'type' => 'stdio',
         ],
         [
             'limit' => 1050,
@@ -287,13 +344,28 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
                 '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
             ],
             'message' => str_repeat('a', 2900),
-        ]
+            'type' => 'stdio',
+        ],
+        [
+            'limit' => 1024,
+            'lines' => [
+                '[08-Oct-2017 19:53:50] WARNING: ' . str_repeat('a',989) . '...',
+                '[08-Oct-2017 19:53:55] NOTICE: Terminating ...',
+                '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
+            ],
+            'message' => str_repeat('a', 2900),
+            'type' => 'message',
+        ],
     ];
     foreach ($cases as $case) {
         printf("Test message with len %d and limit %d: ", strlen($case['message']), $case['limit']);
         $logTool = new LogTool();
         $logTool->setExpectedMessage($case['message'], $case['limit']);
-        $logTool->checkWrappedMessage($case['lines']);
+        if ($case['type'] === 'stdio') {
+            $logTool->checkWrappedMessage($case['lines']);
+        } else {
+            $logTool->checkTruncatedMessage($case['lines']);
+        }
         if (!$logTool->getError()) {
             echo "OK\n";
         }
