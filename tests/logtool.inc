@@ -185,6 +185,9 @@ class LogTool
         if (!$this->checkLineLength($line, $lineLen)) {
             return false;
         }
+        if (!$this->checkMessage($matches[2], $this->position)) {
+            return false;
+        }
         $outLen = strlen($matches[2]);
         if ($rem > $outLen) { // continuous line
             if ($lineLen !== $this->limit) {
