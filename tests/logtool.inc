@@ -56,6 +56,7 @@ class LogTool
     }
 
     /**
+     * @param string $level
      * @return int
      * @todo should be probably part of the message check methods
      */
@@ -136,7 +137,9 @@ class LogTool
                 return $this->error("Unexpected line: $line");
             }
             if ($matches[1] !== substr(self::FINAL_SUFFIX, $this->suffixPosition)) {
-                return $this->error("The suffix has not been finished from position $this->suffixPosition in line: $line");
+                return $this->error(
+                    "The suffix has not been finished from position $this->suffixPosition in line: $line"
+                );
             }
         }
 
@@ -328,9 +331,12 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
         [
             'limit' => 1050,
             'lines' => [
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 968) . '"',
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 968) . '"',
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 112) . '", pipe is closed',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' .
+                    str_repeat('a', 968) . '"',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' .
+                    str_repeat('a', 968) . '"',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' .
+                    str_repeat('a', 112) . '", pipe is closed',
                 '[08-Oct-2017 19:53:55] NOTICE: Terminating ...',
                 '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
             ],
@@ -340,9 +346,12 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
         [
             'limit' => 1050,
             'lines' => [
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 968) . '"',
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 968) . '"',
-                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' . str_repeat('a', 964) . '", pi',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' .
+                    str_repeat('a', 968) . '"',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' .
+                    str_repeat('a', 968) . '"',
+                '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: "' .
+                    str_repeat('a', 964) . '", pi',
                 '[08-Oct-2017 19:53:50] WARNING: [pool unconfined] child 23183 said into stderr: pe is closed',
                 '[08-Oct-2017 19:53:55] NOTICE: Terminating ...',
                 '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
