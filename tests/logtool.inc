@@ -186,13 +186,13 @@ class LogTool
             return false;
         }
         $outLen = strlen($matches[2]);
-        if ($rem > $outLen) { // continous line
+        if ($rem > $outLen) { // continuous line
             if ($lineLen !== $this->limit) {
                 if ($lineLen + ($rem - $outLen) < $this->limit) {
                     return $this->error("Printed less than the message len");
                 }
                 return $this->error(
-                    "The continous line lenght is $lineLen but it should be equal to limit $this->limit"
+                    "The continuous line length is $lineLen but it should equal to limit $this->limit"
                 );
             }
             $this->position += $outLen;
