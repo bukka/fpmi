@@ -126,7 +126,11 @@ class LogTool
         }
 
         if ($this->suffixPosition > 0) {
-            $suffixPattern = sprintf('/^%s %s(.*)$/', self::P_TIME, self::P_PREFIX);
+            $suffixPattern = sprintf(
+                '/^%s %s: %s(.*)$/',
+                self::P_TIME, $this->getExpectedLevel(),
+                self::P_PREFIX
+            );
             $line = $lines[++$idx];
             if (preg_match($suffixPattern, $line, $matches) === 0) {
                 return $this->error("Unexpected line: $line");
