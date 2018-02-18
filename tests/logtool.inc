@@ -83,17 +83,37 @@ class LogTool
         if ($this->message === null) {
             throw new \LogicException('The message has not been set');
         }
+        $line = $lines[0];
+        $lineLen = strlen($line);
+        if (!$this->checkLineLength($line)) {
+            return false;
+        }
         $this->pattern = sprintf(
-            '/^(%s %s: )(.*)(\.\.\.)?$/',
+            '/^(%s %s: )(.*?)(\.\.\.)?$/',
             self::P_TIME,
             $this->getExpectedLevel()
         );
-        if (preg_match($this->pattern, $lines[0], $matches) === 0) {
-            return $this->error("Unexpected truncated message: {$lines[0]}");
+        if (preg_match($this->pattern, $line, $matches) === 0) {
+            return $this->error("Unexpected truncated message: {$line}");
         }
 
-        //TODO: add checks for line length and if 3 dots are correctly used (e.g. only for longer messages)
-
+        if ($lineLen === $this->limit) {
+            if (!isset($matches[3])) {
+                return $this->error("The truncated line is not ended with '...'");
+            }
+            if (!$this->checkMessage($matches[2])) {
+                return false;
+            }
+        } else {
+            if (isset($matches[3])) {
+                // this is expecting that the expected message does not end with '...'
+                // which should not be an issue for the test purpose.
+                return $this->error("The line is complete and should not end with '...'");
+            }
+            if (!$this->checkMessage($matches[2], -1)) {
+                return false;
+            }
+        }
 
         if ($terminated) {
             return $this->expectTerminatorLines($lines, 0);
@@ -162,8 +182,8 @@ class LogTool
 
         $rem = strlen($this->message) - $this->position;
         $lineLen = strlen($line);
-        if ($lineLen > $this->limit) {
-            return $this->error("The line length is $lineLen which is higher than limit $this->limit");
+        if (!$this->checkLineLength($line, $lineLen)) {
+            return false;
         }
         $outLen = strlen($matches[2]);
         if ($rem > $outLen) { // continous line
@@ -192,6 +212,49 @@ class LogTool
         }
         // complete final suffix printed
         return false;
+    }
+
+    /**
+     * @param string $line
+     * @param int $lineLen
+     * @return bool
+     */
+    private function checkLineLength(string $line, $lineLen = null) {
+        $lineLen = $lineLen ?: strlen($line);
+        if ($lineLen > $this->limit) {
+            return $this->error(
+                "The line length is $lineLen which is higher than limit $this->limit"
+            );
+        }
+
+        return true;
+    }
+
+    /**
+     * @param string $matchedMessage
+     * @param int $expectedMessageStart
+     * @return bool
+     */
+    private function checkMessage(string $matchedMessage, int $expectedMessageStart = 0)
+    {
+        if ($expectedMessageStart < 0) {
+            $expectedMessage = $this->message;
+        } else {
+            $expectedMessage = substr($this->message, $expectedMessageStart, strlen($matchedMessage));
+        }
+        if ($expectedMessage !== $matchedMessage) {
+            return $this->error(
+                sprintf(
+                    "The actual string(%d) '%s' does not match expected string(%d) '%s'",
+                    strlen($matchedMessage),
+                    $matchedMessage,
+                    strlen($expectedMessage),
+                    $expectedMessage
+                )
+            );
+        }
+
+        return true;
     }
 
     /**
@@ -367,6 +430,16 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
                 '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
             ],
             'message' => str_repeat('a', 2900),
+            'type' => 'message',
+        ],
+        [
+            'limit' => 1024,
+            'lines' => [
+                '[08-Oct-2017 19:53:50] WARNING: ' . str_repeat('a',20),
+                '[08-Oct-2017 19:53:55] NOTICE: Terminating ...',
+                '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
+            ],
+            'message' => str_repeat('a', 20),
             'type' => 'message',
         ],
     ];
