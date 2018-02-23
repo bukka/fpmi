@@ -74,16 +74,14 @@ class LogTool
     }
 
     /**
-     * @param array $lines
-     * @param bool $terminated
+     * @param string $line
      * @return bool
      */
-    public function checkTruncatedMessage(array $lines, bool $terminated = true)
+    public function checkTruncatedMessage(string $line)
     {
         if ($this->message === null) {
             throw new \LogicException('The message has not been set');
         }
-        $line = $lines[0];
         $lineLen = strlen($line);
         if (!$this->checkLineLength($line)) {
             return false;
@@ -113,10 +111,6 @@ class LogTool
             if (!$this->checkMessage($matches[2], -1)) {
                 return false;
             }
-        }
-
-        if ($terminated) {
-            return $this->expectTerminatorLines($lines, 0);
         }
 
         return true;
@@ -427,21 +421,13 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
         ],
         [
             'limit' => 1024,
-            'lines' => [
-                '[08-Oct-2017 19:53:50] WARNING: ' . str_repeat('a',989) . '...',
-                '[08-Oct-2017 19:53:55] NOTICE: Terminating ...',
-                '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
-            ],
+            'line' => '[08-Oct-2017 19:53:50] WARNING: ' . str_repeat('a',989) . '...',
             'message' => str_repeat('a', 2900),
             'type' => 'message',
         ],
         [
             'limit' => 1024,
-            'lines' => [
-                '[08-Oct-2017 19:53:50] WARNING: ' . str_repeat('a',20),
-                '[08-Oct-2017 19:53:55] NOTICE: Terminating ...',
-                '[08-Oct-2017 19:53:55] NOTICE: exiting, bye-bye!',
-            ],
+            'line' => '[08-Oct-2017 19:53:50] WARNING: ' . str_repeat('a',20),
             'message' => str_repeat('a', 20),
             'type' => 'message',
         ],
@@ -453,7 +439,7 @@ if (isset($argv[1]) && $argv[1] === 'logtool-selftest') {
         if ($case['type'] === 'stdio') {
             $logTool->checkWrappedMessage($case['lines']);
         } else {
-            $logTool->checkTruncatedMessage($case['lines']);
+            $logTool->checkTruncatedMessage($case['line']);
         }
         if (!$logTool->getError()) {
             echo "OK\n";

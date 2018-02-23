@@ -419,6 +419,8 @@ class Tester
         $this->logTool->setExpectedMessage($message, $limit, $repeat);
         if ($wrapped) {
             $this->logTool->checkWrappedMessage($this->getLogLines(-1, true));
+        } else {
+            $this->logTool->checkTruncatedMessage(file_get_contents($this->getFile('log')));
         }
     }
 
