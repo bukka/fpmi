@@ -521,25 +521,26 @@ class Client
 
         $this->_requests[$id] = array(
             'state' => self::REQ_STATE_WRITTEN,
-            'response' => null
+            'response' => null,
+            'err_response' => null,
+            'out_response' => null,
         );
 
         return $id;
     }
 
     /**
-     * Blocking call that waits for response to specific request
+     * Blocking call that waits for response data of the specific request
      *
      * @param int $requestId
      * @param int $timeoutMs [optional] the number of milliseconds to wait.
-     * @param bool $returnMixedContentOnly
-     * @return string  response body
+     * @return array response data
      * @throws ForbiddenException
      * @throws TimedOutException
      * @throws \Exception
      */
-    public function wait_for_response($requestId, $timeoutMs = 0, $returnMixedContentOnly = true) {
-
+    public function wait_for_response_data($requestId, $timeoutMs = 0)
+    {
         if (!isset($this->_requests[$requestId])) {
             throw new \Exception('Invalid request id given');
         }
@@ -568,6 +569,9 @@ class Client
             if ($resp['type'] == self::STDOUT || $resp['type'] == self::STDERR) {
                 if ($resp['type'] == self::STDERR) {
                     $this->_requests[$resp['requestId']]['state'] = self::REQ_STATE_ERR;
+                    $this->_requests[$resp['requestId']]['err_response'] .= $resp['content'];
+                } else {
+                    $this->_requests[$resp['requestId']]['out_response'] .= $resp['content'];
                 }
                 $this->_requests[$resp['requestId']]['response'] .= $resp['content'];
             }
@@ -617,7 +621,22 @@ class Client
                 throw new \Exception('Role value not known [UNKNOWN_ROLE]');
                 break;
             case self::REQUEST_COMPLETE:
-                return $this->_requests[$requestId]['response'];
+                return $this->_requests[$requestId];
         }
+    }
+
+    /**
+     * Blocking call that waits for response to specific request
+     *
+     * @param int $requestId
+     * @param int $timeoutMs [optional] the number of milliseconds to wait.
+     * @return array response data
+     * @throws ForbiddenException
+     * @throws TimedOutException
+     * @throws \Exception
+     */
+    public function wait_for_response($requestId, $timeoutMs = 0)
+    {
+        return $this->wait_for_response_data($requestId, $timeoutMs)['response'];
     }
 }
