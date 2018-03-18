@@ -491,7 +491,7 @@ static inline void zlog_stream_init_ex(struct zlog_stream *stream, int flags, si
 	memset(stream, 0, sizeof(struct zlog_stream));
 	stream->flags = flags;
 	stream->use_syslog = fd == ZLOG_SYSLOG;
-	stream->use_fd = !stream->use_syslog;
+	stream->use_fd = fd > 0;
 	stream->use_buffer = zlog_buffering || external_logger != NULL || stream->use_syslog;
 	stream->buf_init_size = capacity;
 	stream->use_stderr = fd != STDERR_FILENO && fd != STDOUT_FILENO && fd != -1 &&
