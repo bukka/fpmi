@@ -630,7 +630,7 @@ class Client
      *
      * @param int $requestId
      * @param int $timeoutMs [optional] the number of milliseconds to wait.
-     * @return array response data
+     * @return string The response content.
      * @throws ForbiddenException
      * @throws TimedOutException
      * @throws \Exception
