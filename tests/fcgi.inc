@@ -443,7 +443,7 @@ class Client
     }
 
     /**
-     * Execute a request to the FastCGI application
+     * Execute a request to the FastCGI application and return response body
      *
      * @param array $params Array of parameters
      * @param string $stdin Content
@@ -456,6 +456,22 @@ class Client
     {
         $id = $this->async_request($params, $stdin);
         return $this->wait_for_response($id);
+    }
+
+    /**
+     * Execute a request to the FastCGI application and return request data
+     *
+     * @param array $params Array of parameters
+     * @param string $stdin Content
+     * @return array
+     * @throws ForbiddenException
+     * @throws TimedOutException
+     * @throws \Exception
+     */
+    public function request_data(array $params, $stdin)
+    {
+        $id = $this->async_request($params, $stdin);
+        return $this->wait_for_response_data($id);
     }
 
     /**

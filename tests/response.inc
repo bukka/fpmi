@@ -7,6 +7,11 @@ class Response
     const HEADER_SEPARATOR = "\r\n\r\n";
 
     /**
+     * @var array
+     */
+    private $data;
+
+    /**
      * @var string
      */
     private $rawData;
@@ -37,23 +42,21 @@ class Response
     private $expectInvalid;
 
     /**
-     * @param string|null $rawData
+     * @param string|array|null $data
      * @param bool $expectInvalid
      */
-    public function __construct($rawData = null, $expectInvalid = false)
+    public function __construct($data = null, $expectInvalid = false)
     {
-        $this->rawData = $rawData;
-        $this->expectInvalid = $expectInvalid;
-        if ($rawData === null || strpos($rawData, self::HEADER_SEPARATOR) === false) {
-            $this->valid = false;
-            return;
+        if (!is_array($data)) {
+            $data = [
+                'response' => $data,
+                'err_response' => null,
+                'out_response' => $data,
+            ];
         }
 
-        list ($this->rawHeaders, $this->rawBody) = array_map(
-            'trim',
-            explode(self::HEADER_SEPARATOR, $this->rawData)
-        );
-        $this->valid = true;
+        $this->data = $data;
+        $this->expectInvalid = $expectInvalid;
     }
 
     /**
@@ -102,12 +105,21 @@ class Response
     }
 
     /**
+     * @return string|null
+     */
+    public function getErrorData()
+    {
+        return $this->data['err_response'];
+    }
+
+    /**
      * Check if the response is valid and if not emit error message
+     *
      * @return bool
      */
     private function checkIfValid()
     {
-        if ($this->valid) {
+        if ($this->isValid()) {
             return true;
         }
 
@@ -163,7 +175,7 @@ class Response
      */
     private function getHeaders()
     {
-        if (!$this->valid) {
+        if (!$this->isValid()) {
             return null;
         }
 
@@ -184,6 +196,36 @@ class Response
         }
 
         return ($this->headers = $headers);
+    }
+
+    /**
+     * @return bool
+     */
+    private function isValid()
+    {
+        if ($this->valid === null) {
+            $this->processData();
+        }
+
+        return $this->valid;
+    }
+
+    /**
+     * Process data and set validity and raw data
+     */
+    private function processData()
+    {
+        $this->rawData = $this->data['out_response'];
+        $this->valid = (
+            !is_null($this->rawData) &&
+            strpos($this->rawData, self::HEADER_SEPARATOR)
+        );
+        if ($this->valid) {
+            list ($this->rawHeaders, $this->rawBody) = array_map(
+                'trim',
+                explode(self::HEADER_SEPARATOR, $this->rawData)
+            );
+        }
     }
 
     /**

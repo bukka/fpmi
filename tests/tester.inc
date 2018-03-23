@@ -229,7 +229,7 @@ class Tester
         );
 
         try {
-            return new Response($this->client->request($params, false));
+            return new Response($this->client->request_data($params, false));
         } catch (\Exception $exception) {
             $this->error("Request failed", $exception);
             return new Response();
