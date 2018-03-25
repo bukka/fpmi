@@ -65,6 +65,13 @@ class Tester
     private $error;
 
     /**
+     * The last response for the request call
+     *
+     * @var Response
+     */
+    private $response;
+
+    /**
      * Clean all the created files up
      */
     static public function clean()
@@ -229,7 +236,7 @@ class Tester
         );
 
         try {
-            return new Response($this->client->request_data($params, false));
+            return $this->response = new Response($this->client->request_data($params, false));
         } catch (\Exception $exception) {
             $this->error("Request failed", $exception);
             return new Response();
@@ -414,13 +421,17 @@ class Tester
      * @param int $repeat
      * @param bool $wrapped
      */
-    public function expectLogMessage(string $message, int $limit, int $repeat = 0, bool $wrapped = true)
-    {
+    public function expectLogMessage(
+        string $message,
+        int $limit,
+        int $repeat = 0,
+        bool $wrapped = true
+    ) {
         $this->logTool->setExpectedMessage($message, $limit, $repeat);
         if ($wrapped) {
             $this->logTool->checkWrappedMessage($this->getLogLines(-1, true));
         } else {
-            $this->logTool->checkTruncatedMessage(file_get_contents($this->getFile('log')));
+            $this->logTool->checkTruncatedMessage($this->response->getErrorData());
         }
     }
 

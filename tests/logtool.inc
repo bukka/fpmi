@@ -79,6 +79,7 @@ class LogTool
      */
     public function checkTruncatedMessage(string $line)
     {
+        $line = trim($line);
         if ($this->message === null) {
             throw new \LogicException('The message has not been set');
         }
@@ -86,29 +87,25 @@ class LogTool
         if (!$this->checkLineLength($line)) {
             return false;
         }
-        $this->pattern = sprintf(
-            '/^(%s %s: )(.*?)(\.\.\.)?$/',
-            self::P_TIME,
-            $this->getExpectedLevel()
-        );
+        $this->pattern = '/^PHP message: (.*?)(\.\.\.)?$/';
         if (preg_match($this->pattern, $line, $matches) === 0) {
             return $this->error("Unexpected truncated message: {$line}");
         }
 
         if ($lineLen === $this->limit) {
-            if (!isset($matches[3])) {
+            if (!isset($matches[2])) {
                 return $this->error("The truncated line is not ended with '...'");
             }
-            if (!$this->checkMessage($matches[2])) {
+            if (!$this->checkMessage($matches[1])) {
                 return false;
             }
         } else {
-            if (isset($matches[3])) {
+            if (isset($matches[2])) {
                 // this is expecting that the expected message does not end with '...'
                 // which should not be an issue for the test purpose.
                 return $this->error("The line is complete and should not end with '...'");
             }
-            if (!$this->checkMessage($matches[2], -1)) {
+            if (!$this->checkMessage($matches[1], -1)) {
                 return false;
             }
         }
