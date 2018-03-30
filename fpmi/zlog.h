@@ -15,6 +15,9 @@ struct timeval;
 
 typedef unsigned char zlog_bool;
 
+#define ZLOG_TRUE 1
+#define ZLOG_FALSE 0
+
 void zlog_set_external_logger(void (*logger)(int, char *, size_t));
 int zlog_set_fd(int new_fd);
 int zlog_set_level(int new_value);
@@ -82,8 +85,8 @@ struct zlog_stream {
 };
 
 void zlog_stream_init(struct zlog_stream *stream, int flags);
-void zlog_stream_init_for_msg(struct zlog_stream *stream, int flags, size_t msg_len);
-void zlog_stream_init_for_stdio(struct zlog_stream *stream, int flags, int fd);
+void zlog_stream_init_ex(struct zlog_stream *stream, int flags, int fd);
+void zlog_stream_set_wrapping(struct zlog_stream *stream, zlog_bool wrap);
 void zlog_stream_set_msg_quoting(struct zlog_stream *stream, zlog_bool quote);
 ssize_t zlog_stream_set_msg_prefix(struct zlog_stream *stream, const char *fmt, ...)
 		__attribute__ ((format(printf,2,3)));
@@ -98,12 +101,12 @@ ssize_t zlog_stream_vformat(struct zlog_stream *stream, const char *fmt, va_list
 ssize_t zlog_stream_str(struct zlog_stream *stream, const char *str, size_t str_len);
 zlog_bool zlog_stream_finish(struct zlog_stream *stream);
 void zlog_stream_destroy(struct zlog_stream *stream);
+zlog_bool zlog_stream_close(struct zlog_stream *stream);
 
 /* default log limit */
 #define ZLOG_DEFAULT_LIMIT 1024
 /* minimum log limit */
 #define ZLOG_MIN_LIMIT 512
-
 /* default log buffering */
 #define ZLOG_DEFAULT_BUFFERING 1
 

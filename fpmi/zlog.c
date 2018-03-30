@@ -252,6 +252,10 @@ void zlog_ex(const char *function, int line, int flags, const char *fmt, ...) /*
 }
 /* }}} */
 
+/* predefine stream init that is used by zlog_msg_ex */
+static inline void zlog_stream_init_internal(
+		struct zlog_stream *stream, int flags, size_t capacity, int fd);
+
 void zlog_msg_ex(const char *function, int line, int flags,
 		const char *prefix, const char *msg) /* {{{ */
 {
@@ -259,7 +263,7 @@ void zlog_msg_ex(const char *function, int line, int flags,
 	size_t prefix_len = strlen(prefix);
 	size_t msg_len = strlen(msg);
 
-	zlog_stream_init_for_msg(&stream, ZLOG_NOTICE, msg_len + prefix_len);
+	zlog_stream_init_internal(&stream, ZLOG_NOTICE, msg_len + prefix_len, 0);
 	zlog_stream_prefix_ex(&stream, function, line);
 	zlog_stream_str(&stream, prefix, prefix_len);
 	zlog_stream_str(&stream, msg, msg_len);
@@ -482,7 +486,8 @@ static ssize_t zlog_stream_buf_append(struct zlog_stream *stream, const char *st
 	return available_len;
 }
 
-static inline void zlog_stream_init_ex(struct zlog_stream *stream, int flags, size_t capacity, int fd) /* {{{ */
+static inline void zlog_stream_init_internal(
+		struct zlog_stream *stream, int flags, size_t capacity, int fd) /* {{{ */
 {
 	if (fd == 0) {
 		fd = zlog_fd;
@@ -503,20 +508,20 @@ static inline void zlog_stream_init_ex(struct zlog_stream *stream, int flags, si
 
 void zlog_stream_init(struct zlog_stream *stream, int flags) /* {{{ */
 {
-	zlog_stream_init_ex(stream, flags, 1024, 0);
+	zlog_stream_init_internal(stream, flags, 1024, 0);
 }
 /* }}} */
 
-void zlog_stream_init_for_msg(struct zlog_stream *stream, int flags, size_t msg_len) /* {{{ */
+void zlog_stream_init_ex(struct zlog_stream *stream, int flags, int fd) /* {{{ */
 {
-	zlog_stream_init_ex(stream, flags, msg_len + EXTRA_SPACE_FOR_PREFIX, 0);
-}
-/* }}} */
-
-void zlog_stream_init_for_stdio(struct zlog_stream *stream, int flags, int fd) /* {{{ */
-{
-	zlog_stream_init_ex(stream, flags, 1024, fd);
+	zlog_stream_init_internal(stream, flags, 1024, fd);
 	stream->wrap = 1;
+}
+/* }}} */
+
+void zlog_stream_set_wrapping(struct zlog_stream *stream, zlog_bool wrap) /* {{{ */
+{
+	stream->wrap = wrap ? 1 : 0;
 }
 /* }}} */
 
@@ -753,3 +758,11 @@ void zlog_stream_destroy(struct zlog_stream *stream) /* {{{ */
 	}
 }
 /* }}} */
+
+zlog_bool zlog_stream_close(struct zlog_stream *stream) /* {{{ */
+{
+	zlog_bool finished = zlog_stream_finish(stream);
+	zlog_stream_destroy(stream);
+
+	return finished;
+}
