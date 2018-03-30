@@ -501,7 +501,8 @@ static inline void zlog_stream_init_internal(
 	stream->buf_init_size = capacity;
 	stream->use_stderr = fd != STDERR_FILENO && fd != STDOUT_FILENO && fd != -1 &&
 			!launched && (flags & ZLOG_LEVEL_MASK) >= ZLOG_NOTICE;
-	stream->prefix_buffer = (flags & ZLOG_LEVEL_MASK) >= zlog_level;
+	stream->prefix_buffer = (flags & ZLOG_LEVEL_MASK) >= zlog_level &&
+			(stream->use_fd || stream->use_syslog);
 	stream->fd = fd > -1 ? fd : STDERR_FILENO;
 }
 /* }}} */
@@ -599,7 +600,7 @@ ssize_t zlog_stream_prefix_ex(struct zlog_stream *stream, const char *function, 
 	size_t len;
 
 	if (!stream->prefix_buffer) {
-		return 1;
+		return 0;
 	}
 	if (stream->wrap && stream->function == NULL) {
 		stream->function = function;
