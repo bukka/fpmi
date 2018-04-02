@@ -1,5 +1,5 @@
 --TEST--
-FPMI: Buffered message output decorated log with limit 1024 and msg 80
+FPMI: Buffered message output log with limit 1024 and msg 80
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
