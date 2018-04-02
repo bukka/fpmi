@@ -128,10 +128,10 @@ int zlog_set_buffering(zlog_bool buffering) /* {{{ */
 }
 /* }}} */
 
-static inline size_t zlog_truncate_buf(char *buf, size_t buf_size) /* {{{ */
+static inline size_t zlog_truncate_buf(char *buf, size_t buf_size, size_t space_left) /* {{{ */
 {
-	memcpy(buf + buf_size - sizeof("..."), "...", sizeof("...") - 1);
-	return buf_size - 1;
+	memcpy(buf + buf_size - sizeof("...") + 1 - space_left, "...", sizeof("...") - 1);
+	return buf_size - space_left;
 }
 /* }}} */
 
@@ -146,7 +146,7 @@ static inline void zlog_external(
 	va_end(ap);
 
 	if (len >= buf_size) {
-		len = zlog_truncate_buf(buf, buf_size);
+		len = zlog_truncate_buf(buf, buf_size, 0);
 	}
 	external_logger(flags & ZLOG_LEVEL_MASK, buf, len);
 }
@@ -231,7 +231,7 @@ void vzlog(const char *function, int line, int flags, const char *fmt, va_list a
 	}
 
 	if (truncated) {
-		len = zlog_truncate_buf(buf, zlog_limit < buf_size ? zlog_limit : buf_size);
+		len = zlog_truncate_buf(buf, zlog_limit < buf_size ? zlog_limit : buf_size, 1);
 	}
 
 #ifdef HAVE_SYSLOG_H
@@ -356,6 +356,7 @@ static inline ssize_t zlog_stream_unbuffered_write(
 		stream->len = zlog_stream_prefix_ex(stream, stream->function, stream->line);
 	}
 
+	/* msg_suffix_len and msg_quote are used only for wrapping */
 	reserved_len = stream->len + stream->msg_suffix_len + stream->msg_quote;
 	required_len = reserved_len + len;
 	if (required_len >= zlog_limit) {
@@ -388,11 +389,15 @@ static inline ssize_t zlog_stream_unbuffered_write(
 
 			return written;
 		}
+		/* this would be used in case of an option for disabling wrapping in direct write */
 		stream->finished = finished = 1;
-		/* TODO: msg_quote and msg_suffix should be attemted to write and possibly trimmed */
-		append = (required_len == zlog_limit) ? "\n" : "...\n";
-		append_len = sizeof(append) - 1;
-		len = zlog_limit - stream->len - append_len;
+		if (required_len == zlog_limit) {
+			append = NULL;
+		} else {
+			append = "...";
+			append_len = sizeof(append) - 1;
+			len = zlog_limit - stream->len - append_len;
+		}
 	}
 
 	written = zlog_stream_direct_write_ex(stream, buf, len, append, append_len);
@@ -467,6 +472,7 @@ static ssize_t zlog_stream_buf_append(
 		stream->len = zlog_stream_prefix_ex(stream, stream->function, stream->line);
 	}
 
+	/* msg_suffix_len and msg_quote are used only for wrapping */
 	reserved_len = stream->len + stream->msg_suffix_len + stream->msg_quote;
 	required_len = reserved_len + str_len;
 	if (required_len >= zlog_limit) {
@@ -491,14 +497,13 @@ static ssize_t zlog_stream_buf_append(
 		if (stream->msg_suffix != NULL) {
 			zlog_stream_buf_copy_cstr(stream, stream->msg_suffix, stream->msg_suffix_len);
 		}
-		zlog_stream_buf_copy_char(stream, '\n');
 		zlog_stream_buf_flush(stream);
 		zlog_stream_prefix_ex(stream, stream->function, stream->line);
 		return available_len + zlog_stream_buf_append(
 				stream, str + available_len, str_len - available_len);
 	}
 
-	stream->len = zlog_truncate_buf(stream->buf, stream->len);
+	stream->len = zlog_truncate_buf(stream->buf, stream->len, 0);
 	stream->finished = 1;
 	return available_len;
 }
@@ -576,6 +581,9 @@ ssize_t zlog_stream_set_msg_suffix(
 		struct zlog_stream *stream, const char *suffix, const char *final_suffix)  /* {{{ */
 {
 	size_t len;
+	if (!stream->wrap) {
+		return -1;
+	}
 
 	if (suffix != NULL && final_suffix != NULL) {
 		stream->msg_suffix_len = strlen(suffix);

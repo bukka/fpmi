@@ -79,7 +79,6 @@ class LogTool
      */
     public function checkTruncatedMessage(string $line)
     {
-        $line = trim($line);
         if ($this->message === null) {
             throw new \LogicException('The message has not been set');
         }
