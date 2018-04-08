@@ -130,10 +130,12 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	if (!arg) {
 		return;
 	}
+	child = (struct fpmi_child_s *)arg;
+
 	zlog_stream_init_ex(&stream, ZLOG_WARNING, STDERR_FILENO);
+	zlog_stream_set_decorating(&stream, child->wp->config->decorate_workers_output);
 	zlog_stream_set_wrapping(&stream, ZLOG_TRUE);
 
-	child = (struct fpmi_child_s *)arg;
 	is_stdout = (fd == child->fd_stdout);
 	if (is_stdout) {
 		event = &child->ev_stdout;

@@ -448,16 +448,22 @@ class Tester
      * @param int $limit
      * @param int $repeat
      * @param bool $wrapped
+     * @param bool $decorated
      */
     public function expectLogMessage(
         string $message,
         int $limit,
         int $repeat = 0,
-        bool $wrapped = true
+        bool $wrapped = true,
+        bool $decorated = true
     ) {
         $this->logTool->setExpectedMessage($message, $limit, $repeat);
         if ($wrapped) {
-            $this->logTool->checkWrappedMessage($this->getLogLines(-1, true));
+            $this->logTool->checkWrappedMessage(
+                $this->getLogLines(-1, true),
+                true,
+                $decorated
+            );
         } else {
             $this->logTool->checkTruncatedMessage($this->response->getErrorData());
         }

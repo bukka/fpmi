@@ -68,6 +68,7 @@ struct zlog_stream {
 	unsigned int finished:1;
 	unsigned int wrap:1;
 	unsigned int msg_quote:1;
+	unsigned int decorate:1;
 	int fd;
 	int line;
 	const char *function;
@@ -86,6 +87,7 @@ struct zlog_stream {
 
 void zlog_stream_init(struct zlog_stream *stream, int flags);
 void zlog_stream_init_ex(struct zlog_stream *stream, int flags, int fd);
+void zlog_stream_set_decorating(struct zlog_stream *stream, zlog_bool decorate);
 void zlog_stream_set_wrapping(struct zlog_stream *stream, zlog_bool wrap);
 void zlog_stream_set_msg_quoting(struct zlog_stream *stream, zlog_bool quote);
 ssize_t zlog_stream_set_msg_prefix(struct zlog_stream *stream, const char *fmt, ...)

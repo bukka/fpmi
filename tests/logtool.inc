@@ -115,19 +115,24 @@ class LogTool
     /**
      * @param array $lines
      * @param bool $terminated
+     * @param bool $decorated
      * @return bool
      */
-    public function checkWrappedMessage(array $lines, bool $terminated = true)
+    public function checkWrappedMessage(array $lines, bool $terminated = true, bool $decorated = true)
     {
         if ($this->message === null) {
             throw new \LogicException('The message has not been set');
         }
-        $this->pattern = sprintf(
-            '/^(%s %s: %s)"([^"]*)"(.*)?$/',
-            self::P_TIME,
-            $this->getExpectedLevel(),
-            self::P_PREFIX
-        );
+        if ($decorated) {
+            $this->pattern = sprintf(
+                '/^(%s %s: %s)"([^"]*)"(.*)?$/',
+                self::P_TIME,
+                $this->getExpectedLevel(),
+                self::P_PREFIX
+            );
+        } else {
+            $this->pattern = null;
+        }
 
         $idx = 0;
         foreach ($lines as $idx => $line) {
@@ -166,7 +171,14 @@ class LogTool
      */
     private function checkLine(string $line)
     {
-        if (preg_match($this->pattern, $line, $matches) === 0) {
+        if ($this->pattern === null) {
+            // plain (not decorated) output
+            $out = rtrim($line);
+            $finalSuffix = null;
+        } elseif (($res = preg_match($this->pattern, $line, $matches)) > 0) {
+            $out = $matches[2];
+            $finalSuffix = $matches[3] ?? false;
+        } else {
             return $this->error("Unexpected line: $line");
         }
 
@@ -175,10 +187,10 @@ class LogTool
         if (!$this->checkLineLength($line, $lineLen)) {
             return false;
         }
-        if (!$this->checkMessage($matches[2], $this->position)) {
+        if (!$this->checkMessage($out, $this->position)) {
             return false;
         }
-        $outLen = strlen($matches[2]);
+        $outLen = strlen($out);
         if ($rem > $outLen) { // continuous line
             if ($lineLen !== $this->limit) {
                 if ($lineLen + ($rem - $outLen) < $this->limit) {
@@ -194,14 +206,17 @@ class LogTool
         if ($rem !== $outLen)  {
             return $this->error("Printed more than the message len");
         }
-        if (!isset($matches[3])) {
+        if ($finalSuffix === null) {
+            return false;
+        }
+        if ($finalSuffix === false) {
             return $this->error("No final suffix");
         }
-        if (strpos(self::FINAL_SUFFIX, $matches[3]) === false) {
+        if (strpos(self::FINAL_SUFFIX, $finalSuffix) === false) {
             return $this->error("The final suffix has to be equal to ', pipe is closed'");
         }
-        if (self::FINAL_SUFFIX !== $matches[3]) {
-            $this->suffixPosition = strlen($matches[3]);
+        if (self::FINAL_SUFFIX !== $finalSuffix) {
+            $this->suffixPosition = strlen($finalSuffix);
         }
         // complete final suffix printed
         return false;

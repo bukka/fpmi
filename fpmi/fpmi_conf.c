@@ -620,6 +620,7 @@ static void *fpmi_worker_pool_config_alloc() /* {{{ */
 	wp->config->pm_process_idle_timeout = 10; /* 10s by default */
 	wp->config->process_priority = 64; /* 64 means unset */
 	wp->config->clear_env = 1;
+	wp->config->decorate_workers_output = 1;
 
 	if (!fpmi_worker_all_pools) {
 		fpmi_worker_all_pools = wp;

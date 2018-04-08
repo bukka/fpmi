@@ -543,6 +543,12 @@ void zlog_stream_init_ex(struct zlog_stream *stream, int flags, int fd) /* {{{ *
 }
 /* }}} */
 
+void zlog_stream_set_decorating(struct zlog_stream *stream, zlog_bool decorate) /* {{{ */
+{
+	stream->decorate = decorate ? 1 : 0;
+}
+/* }}} */
+
 void zlog_stream_set_wrapping(struct zlog_stream *stream, zlog_bool wrap) /* {{{ */
 {
 	stream->wrap = wrap ? 1 : 0;
@@ -560,6 +566,10 @@ ssize_t zlog_stream_set_msg_prefix(struct zlog_stream *stream, const char *fmt, 
 	char buf[MAX_WRAPPING_PREFIX_LENGTH];
 	size_t len;
 	va_list args;
+
+	if (!stream->decorate) {
+		return -1;
+	}
 
 	va_start(args, fmt);
 	len = vsnprintf(buf, MAX_WRAPPING_PREFIX_LENGTH - 1, fmt, args);
@@ -581,7 +591,7 @@ ssize_t zlog_stream_set_msg_suffix(
 		struct zlog_stream *stream, const char *suffix, const char *final_suffix)  /* {{{ */
 {
 	size_t len;
-	if (!stream->wrap) {
+	if (!stream->wrap || !stream->decorate) {
 		return -1;
 	}
 
@@ -625,7 +635,7 @@ ssize_t zlog_stream_prefix_ex(struct zlog_stream *stream, const char *function, 
 {
 	size_t len;
 
-	if (!stream->prefix_buffer) {
+	if (!stream->prefix_buffer || !stream->decorate) {
 		return 0;
 	}
 	if (stream->wrap && stream->function == NULL) {
@@ -703,6 +713,79 @@ ssize_t zlog_stream_str(struct zlog_stream *stream, const char *str, size_t str_
 }
 /* }}} */
 
+static inline void zlog_stream_finish_buffer_suffix(struct zlog_stream *stream) /* {{{ */
+{
+	if (stream->msg_quote) {
+		zlog_stream_buf_copy_char(stream, '"');
+	}
+	if (stream->msg_suffix != NULL) {
+		zlog_stream_buf_copy_cstr(stream, stream->msg_suffix, stream->msg_suffix_len);
+	}
+	if (stream->msg_final_suffix != NULL) {
+		if (stream->len + stream->msg_final_suffix_len >= zlog_limit) {
+			zlog_bool quoting = stream->msg_quote;
+			size_t extra_final_suffix = stream->len +
+					stream->msg_final_suffix_len + 1 - zlog_limit;
+			zlog_stream_buf_copy_cstr(
+					stream, stream->msg_final_suffix,
+					stream->msg_final_suffix_len - extra_final_suffix);
+			zlog_stream_buf_copy_char(stream, '\n');
+			zlog_stream_buf_flush(stream);
+			stream->msg_quote = 0;
+			zlog_stream_prefix_ex(stream, stream->function, stream->line);
+			stream->msg_quote = quoting;
+			zlog_stream_buf_copy_cstr(
+					stream,
+					stream->msg_final_suffix +
+						(stream->msg_final_suffix_len - extra_final_suffix),
+					extra_final_suffix);
+			zlog_stream_buf_copy_char(stream, '\n');
+		} else {
+			zlog_stream_buf_copy_cstr(
+					stream, stream->msg_final_suffix, stream->msg_final_suffix_len);
+		}
+	}
+}
+/* }}} */
+
+static inline void zlog_stream_finish_direct_suffix(struct zlog_stream *stream) /* {{{ */
+{
+	if (stream->msg_quote) {
+		zlog_stream_direct_write(stream, "\"", 1);
+		++stream->len;
+	}
+	if (stream->msg_suffix != NULL) {
+		/* we should always have space for wrap suffix so we don't have to check it */
+		zlog_stream_direct_write(stream, stream->msg_suffix, stream->msg_suffix_len);
+		stream->len += stream->msg_suffix_len;
+	}
+	if (stream->msg_final_suffix != NULL) {
+		if (stream->len + stream->msg_final_suffix_len >= zlog_limit) {
+			zlog_bool quoting = stream->msg_quote;
+			size_t extra_final_suffix = stream->len +
+					stream->msg_final_suffix_len + 1 - zlog_limit;
+			zlog_stream_direct_write_ex(
+					stream, stream->msg_final_suffix,
+					stream->msg_final_suffix_len - extra_final_suffix,
+					"\n", 1);
+			stream->msg_quote = 0;
+			zlog_stream_prefix_ex(stream, stream->function, stream->line);
+			stream->msg_quote = quoting;
+			zlog_stream_direct_write_ex(
+					stream,
+					stream->msg_final_suffix +
+						(stream->msg_final_suffix_len - extra_final_suffix),
+					extra_final_suffix, "\n", 1);
+		} else {
+			zlog_stream_direct_write_ex(
+					stream, stream->msg_final_suffix, stream->msg_final_suffix_len, "\n", 1);
+		}
+	} else {
+		zlog_stream_direct_write(stream, "\n", 1);
+	}
+}
+/* }}} */
+
 zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 {
 	if (stream->len == 0) {
@@ -710,73 +793,17 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 		return 1;
 	}
 	if (stream->use_buffer) {
-		if (stream->msg_quote) {
-			zlog_stream_buf_copy_char(stream, '"');
-		}
-		if (stream->msg_suffix != NULL) {
-			zlog_stream_buf_copy_cstr(stream, stream->msg_suffix, stream->msg_suffix_len);
-		}
-		if (stream->msg_final_suffix != NULL) {
-			if (stream->len + stream->msg_final_suffix_len >= zlog_limit) {
-				zlog_bool quoting = stream->msg_quote;
-				size_t extra_final_suffix = stream->len +
-						stream->msg_final_suffix_len + 1 - zlog_limit;
-				zlog_stream_buf_copy_cstr(
-						stream, stream->msg_final_suffix,
-						stream->msg_final_suffix_len - extra_final_suffix);
-				zlog_stream_buf_copy_char(stream, '\n');
-				zlog_stream_buf_flush(stream);
-				stream->msg_quote = 0;
-				zlog_stream_prefix_ex(stream, stream->function, stream->line);
-				stream->msg_quote = quoting;
-				zlog_stream_buf_copy_cstr(
-						stream,
-						stream->msg_final_suffix +
-							(stream->msg_final_suffix_len - extra_final_suffix),
-						extra_final_suffix);
-				zlog_stream_buf_copy_char(stream, '\n');
-			} else {
-				zlog_stream_buf_copy_cstr(
-						stream, stream->msg_final_suffix, stream->msg_final_suffix_len);
-			}
+		if (stream->decorate) {
+			zlog_stream_finish_buffer_suffix(stream);
 		}
 		zlog_stream_buf_flush(stream);
 	} else if (!stream->finished) {
-		if (stream->msg_quote) {
-			zlog_stream_direct_write(stream, "\"", 1);
-			++stream->len;
-		}
-		if (stream->msg_suffix != NULL) {
-			/* we should always have space for wrap suffix so we don't have to check it */
-			zlog_stream_direct_write(stream, stream->msg_suffix, stream->msg_suffix_len);
-			stream->len += stream->msg_suffix_len;
-		}
-		if (stream->msg_final_suffix != NULL) {
-			if (stream->len + stream->msg_final_suffix_len >= zlog_limit) {
-				zlog_bool quoting = stream->msg_quote;
-				size_t extra_final_suffix = stream->len +
-						stream->msg_final_suffix_len + 1 - zlog_limit;
-				zlog_stream_direct_write_ex(
-						stream, stream->msg_final_suffix,
-						stream->msg_final_suffix_len - extra_final_suffix,
-						"\n", 1);
-				stream->msg_quote = 0;
-				zlog_stream_prefix_ex(stream, stream->function, stream->line);
-				stream->msg_quote = quoting;
-				zlog_stream_direct_write_ex(
-						stream,
-						stream->msg_final_suffix +
-							(stream->msg_final_suffix_len - extra_final_suffix),
-						extra_final_suffix, "\n", 1);
-			} else {
-				zlog_stream_direct_write_ex(
-						stream, stream->msg_final_suffix, stream->msg_final_suffix_len, "\n", 1);
-			}
+		if (stream->decorate) {
+			zlog_stream_finish_direct_suffix(stream);
 		} else {
 			zlog_stream_direct_write(stream, "\n", 1);
 		}
 	}
-
 	stream->finished = 1;
 
 	return 1;
