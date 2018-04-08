@@ -16,6 +16,11 @@ class Tester
     static private $supportedFiles = ['log', 'src.php', 'ini'];
 
     /**
+     * @var array
+     */
+    static private $filesToClean = ['.user.ini'];
+
+    /**
      * @var Client
      */
     private $client;
@@ -81,8 +86,22 @@ class Tester
             $filePrefix = substr($filePrefix, 0, -6);
         }
 
-        foreach (self::$supportedFiles as $fileExtension) {
-            $filePath = $filePrefix . $fileExtension;
+        $filesToClean = array_merge(
+            array_map(
+                function($fileExtension) use ($filePrefix) {
+                    return $filePrefix . $fileExtension;
+                },
+                self::$supportedFiles
+            ),
+            array_map(
+                function($fileExtension) {
+                    return __DIR__ . '/' . $fileExtension;
+                },
+                self::$filesToClean
+            )
+        );
+
+        foreach ($filesToClean as $filePath) {
             if (is_file($filePath)) {
                 unlink($filePath);
             }
@@ -154,6 +173,15 @@ class Tester
         $this->fileName = self::getCallerFileName();
         $this->client = new Client($this->getHost(), $this->getPort());
         $this->logTool = new LogTool();
+    }
+
+    /**
+     * @param string $ini
+     */
+    public function setUserIni(string $ini)
+    {
+        $iniFile = __DIR__ . '/.user.ini';
+        file_put_contents($iniFile, $ini);
     }
 
     /**

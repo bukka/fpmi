@@ -28,23 +28,21 @@ var_dump(ini_get('memory_limit'), ini_get('date.timezone'));
 echo "Test End\n";
 EOT;
 
-//TODO: integrate to the tester
-$inifile = __DIR__.'/.user.ini';
 $ini = <<<EOT
 memory_limit=64M
 date.timezone=Europe/Paris
-
 EOT;
-file_put_contents($inifile, $ini);
 
 $tester = new FPMI\Tester($cfg, $code);
+$tester->setUserIni($ini);
 $tester->start();
 $tester->expectLogStartNotices();
-//TODO: add method for handling multiple lines in body
-$tester->request()->expectBody('Test Start
-string(3) "32M"
-string(12) "Europe/Paris"
-Test End');
+$tester->request()->expectBody([
+    'Test Start',
+    'string(3) "32M"',
+    'string(12) "Europe/Paris"',
+    'Test End'
+]);
 $tester->terminate();
 $tester->close();
 
@@ -56,5 +54,4 @@ Done
 <?php
 require_once "tester.inc";
 FPMI\Tester::clean();
-@unlink(__DIR__.'/.user.ini');
 ?>

@@ -60,13 +60,26 @@ class Response
     }
 
     /**
-     * @param $body
+     * @param mixed $body
      * @return Response
      */
     public function expectBody($body)
     {
+        if ($multiLine = is_array($body)) {
+            $body = implode("\n", $body);
+        }
+
         if ($this->checkIfValid() && $this->checkDefaultHeaders() && $body !== $this->rawBody) {
-            $this->error("The expected body '$body' does not match actual body '$this->rawBody'");
+            if ($multiLine) {
+                $this->error(
+                    "==> The expected body:\n$body\n" .
+                    "==> does not match the actual body:\n$this->rawBody"
+                );
+            } else {
+                $this->error(
+                    "The expected body '$body' does not match actual body '$this->rawBody'"
+                );
+            }
         }
 
         return $this;
