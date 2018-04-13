@@ -545,7 +545,12 @@ void zlog_stream_init_ex(struct zlog_stream *stream, int flags, int fd) /* {{{ *
 
 void zlog_stream_set_decorating(struct zlog_stream *stream, zlog_bool decorate) /* {{{ */
 {
-	stream->decorate = decorate ? 1 : 0;
+	if (decorate) {
+		stream->decorate = 1;
+	} else {
+		stream->decorate = 0;
+		stream->msg_quote = 0;
+	}
 }
 /* }}} */
 
@@ -557,7 +562,7 @@ void zlog_stream_set_wrapping(struct zlog_stream *stream, zlog_bool wrap) /* {{{
 
 void zlog_stream_set_msg_quoting(struct zlog_stream *stream, zlog_bool quote) /* {{{ */
 {
-	stream->msg_quote = quote ? 1 : 0;
+	stream->msg_quote = quote && stream->decorate ? 1 : 0;
 }
 /* }}} */
 
