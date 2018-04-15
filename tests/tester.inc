@@ -21,6 +21,11 @@ class Tester
     static private $filesToClean = ['.user.ini'];
 
     /**
+     * @var bool
+     */
+    private $debug;
+
+    /**
      * @var Client
      */
     private $client;
@@ -173,6 +178,7 @@ class Tester
         $this->fileName = self::getCallerFileName();
         $this->client = new Client($this->getHost(), $this->getPort());
         $this->logTool = new LogTool();
+        $this->debug = (bool) getenv('TEST_FPMI_DEBUG');
     }
 
     /**
@@ -264,11 +270,15 @@ class Tester
         );
 
         try {
-            return $this->response = new Response($this->client->request_data($params, false));
+            $this->response = new Response($this->client->request_data($params, false));
         } catch (\Exception $exception) {
             $this->error("Request failed", $exception);
-            return new Response();
+            $this->response =  new Response();
         }
+        if ($this->debug) {
+            $this->response->debugOutput();
+        }
+        return $this->response;
     }
 
     /**
@@ -459,11 +469,13 @@ class Tester
     ) {
         $this->logTool->setExpectedMessage($message, $limit, $repeat);
         if ($wrapped) {
-            $this->logTool->checkWrappedMessage(
-                $this->getLogLines(-1, true),
-                true,
-                $decorated
-            );
+            $logLines = $this->getLogLines(-1, true);
+            if ($this->debug) {
+                echo "-------------- LOG LINES: -------------\n";
+                var_dump($logLines);
+                echo "---------------------------------------\n\n";
+            }
+            $this->logTool->checkWrappedMessage($logLines, true, $decorated);
         } else {
             $this->logTool->checkTruncatedMessage($this->response->getErrorData());
         }

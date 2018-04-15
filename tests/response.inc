@@ -118,6 +118,19 @@ class Response
     }
 
     /**
+     * Debug response output
+     */
+    public function debugOutput()
+    {
+        echo "-------------- RESPONSE: --------------\n";
+        echo "OUT:\n";
+        echo $this->data['out_response'];
+        echo "ERR:\n";
+        echo $this->data['err_response'];
+        echo "---------------------------------------\n\n";
+    }
+
+    /**
      * @return string|null
      */
     public function getErrorData()
