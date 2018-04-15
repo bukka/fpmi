@@ -441,11 +441,6 @@ static ssize_t zlog_stream_buf_flush(struct zlog_stream *stream) /* {{{ */
 {
 	ssize_t written;
 
-	if (external_logger != NULL) {
-		external_logger(stream->flags & ZLOG_LEVEL_MASK,
-				stream->buf + stream->prefix_len, stream->len - stream->prefix_len);
-	}
-
 #ifdef HAVE_SYSLOG_H
 	if (stream->use_syslog) {
 		zlog_stream_buf_copy_char(stream, '\0');
@@ -453,7 +448,12 @@ static ssize_t zlog_stream_buf_flush(struct zlog_stream *stream) /* {{{ */
 		--stream->len;
 	}
 #endif
+
 	zlog_stream_buf_copy_char(stream, '\n');
+	if (external_logger != NULL) {
+		external_logger(stream->flags & ZLOG_LEVEL_MASK,
+				stream->buf + stream->prefix_len, stream->len - stream->prefix_len);
+	}
 	written = zlog_stream_direct_write(stream, stream->buf, stream->len);
 	stream->len = 0;
 

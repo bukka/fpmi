@@ -636,24 +636,17 @@ static void sapi_cgi_register_variables(zval *track_vars_array) /* {{{ */
  */
 void sapi_cgi_log_fastcgi(int level, char *message, size_t len)
 {
-
 	fcgi_request *request = (fcgi_request*) SG(server_context);
 
-	/* ensure we want:
-	 * - to log (fastcgi.logging in php.ini)
+	/* message is written to FCGI_STDERR if following conditions are met:
+	 * - logging is enabled (fastcgi.logging in php.ini)
 	 * - we are currently dealing with a request
 	 * - the message is not empty
+	 * - the fcgi_write did not fail
 	 */
-	if (CGIG(fcgi_logging) && request && message && len > 0) {
-		ssize_t ret;
-		char *buf = malloc(len + 2);
-		memcpy(buf, message, len);
-		memcpy(buf + len, "\n", sizeof("\n"));
-		ret = fcgi_write(request, FCGI_STDERR, buf, len + 1);
-		free(buf);
-		if (ret < 0) {
-			php_handle_aborted_connection();
-		}
+	if (CGIG(fcgi_logging) && request && message && len > 0
+			&& fcgi_write(request, FCGI_STDERR, message, len) < 0) {
+		php_handle_aborted_connection();
 	}
 }
 /* }}} */
