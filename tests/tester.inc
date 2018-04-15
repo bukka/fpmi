@@ -170,7 +170,7 @@ class Tester
      * @param string $code
      * @param array $options
      */
-    public function __construct(string $configTemplate, string $code, array $options = [])
+    public function __construct(string $configTemplate, string $code = '', array $options = [])
     {
         $this->configTemplate = $configTemplate;
         $this->code = $code;
@@ -362,6 +362,7 @@ class Tester
         $replacementMap = [
             'FILE:LOG' => $this->getFile('log'),
             'ADDR' => $this->getAddr(),
+            'PORT' => $this->getPort(),
         ];
 
         $config = $this->configTemplate;
@@ -409,7 +410,7 @@ class Tester
     /**
      * @return int
      */
-    private function getPort()
+    public function getPort()
     {
         return 9000 + PHP_INT_SIZE;
     }
@@ -417,7 +418,7 @@ class Tester
     /**
      * @return string
      */
-    private function getHost()
+    public function getHost()
     {
         return '127.0.0.1';
     }
