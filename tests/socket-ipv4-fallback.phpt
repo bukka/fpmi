@@ -35,6 +35,6 @@ Done
 Done
 --CLEAN--
 <?php
-$logfile = dirname(__FILE__).'/php-fpmi.log.tmp';
-@unlink($logfile);
+require_once "tester.inc";
+FPMI\Tester::clean();
 ?>
