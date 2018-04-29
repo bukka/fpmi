@@ -13,7 +13,7 @@ class Tester
     /**
      * @var array
      */
-    static private $supportedFiles = ['log', 'src.php', 'ini'];
+    static private $supportedFiles = ['log', 'src.php', 'ini', 'skip.ini'];
 
     /**
      * @var array
@@ -187,7 +187,7 @@ class Tester
      */
     static public function skipIfConfigFails( string $configTemplate)
     {
-        $tester = new self($configTemplate);
+        $tester = new self($configTemplate, '', [], self::getCallerFileName());
         $testResult = $tester->testConfig();
         if ($testResult !== null) {
             die("skip $testResult");
@@ -200,13 +200,18 @@ class Tester
      * @param string $configTemplate
      * @param string $code
      * @param array $options
+     * @param string $fileName
      */
-    public function __construct(string $configTemplate, string $code = '', array $options = [])
-    {
+    public function __construct(
+        string $configTemplate,
+        string $code = '',
+        array $options = [],
+        $fileName = null
+    ) {
         $this->configTemplate = $configTemplate;
         $this->code = $code;
         $this->options = $options;
-        $this->fileName = self::getCallerFileName();
+        $this->fileName = $fileName ?: self::getCallerFileName();
         $this->client = new Client($this->getHost(), $this->getPort());
         $this->logTool = new LogTool();
         $this->debug = (bool) getenv('TEST_FPMI_DEBUG');
@@ -403,9 +408,10 @@ class Tester
     }
 
     /**
+     * @param string $extension
      * @return string
      */
-    private function createConfig()
+    private function createConfig($extension = 'ini')
     {
         $replacementMap = [
             'FILE:LOG' => $this->getFile('log'),
@@ -418,7 +424,7 @@ class Tester
             $config = str_replace('{{' . $placeholder . '}}', $value, $config);
         }
 
-        return $this->makeFile('ini', $config);
+        return $this->makeFile($extension, $config);
     }
 
     /**
