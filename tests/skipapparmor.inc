@@ -14,6 +14,7 @@ pm.max_spare_servers = 3
 apparmor_hat = a
 EOT;
 
+include dirname(__FILE__)."/include.inc";
 $fpmi = run_fpmi($cfg, $out, '-t');
 $ok = false;
 if (is_resource($fpmi)) {
