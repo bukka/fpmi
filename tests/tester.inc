@@ -164,6 +164,37 @@ class Tester
     }
 
     /**
+     * Skip test if any of the supplied files does not exist.
+     *
+     * @param mixed $files
+     */
+    static public function skipIfAnyFileDoesNotExist($files)
+    {
+        if (!is_array($files)) {
+            $files = array($files);
+        }
+        foreach ($files as $file) {
+            if (!file_exists($file)) {
+                die("skip File $file does not exist");
+            }
+        }
+    }
+
+    /**
+     * Skip test if config file is invalid.
+     *
+     * @param string $configTemplate
+     */
+    static public function skipIfConfigFails( string $configTemplate)
+    {
+        $tester = new self($configTemplate);
+        $testResult = $tester->testConfig();
+        if ($testResult !== null) {
+            die("skip $testResult");
+        }
+    }
+
+    /**
      * Tester constructor.
      *
      * @param string $configTemplate
@@ -188,6 +219,23 @@ class Tester
     {
         $iniFile = __DIR__ . '/.user.ini';
         file_put_contents($iniFile, $ini);
+    }
+
+    /**
+     * Test configuration file.
+     *
+     * @return null|string
+     */
+    public function testConfig()
+    {
+        $configFile = $this->createConfig();
+        $cmd = self::findExecutable() . ' -t -y ' . $configFile . ' 2>&1';
+        exec($cmd, $output, $code);
+        if ($code) {
+            return preg_replace("/\[.+?\]/", "", $output[0]);
+        }
+
+        return null;
     }
 
     /**
