@@ -5,9 +5,9 @@ FPMI: version string
 --FILE--
 <?php
 
-include "include.inc";
+require_once "tester.inc";
 
-$php = get_fpmi_path();
+$php = \FPMI\Tester::findExecutable();
 
 var_dump(`$php -n -v`);
 
