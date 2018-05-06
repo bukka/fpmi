@@ -212,7 +212,6 @@ class Tester
         $this->code = $code;
         $this->options = $options;
         $this->fileName = $fileName ?: self::getCallerFileName();
-        $this->client = new Client($this->getHost(), $this->getPort());
         $this->logTool = new LogTool();
         $this->debug = (bool) getenv('TEST_FPMI_DEBUG');
     }
@@ -283,14 +282,30 @@ class Tester
     }
 
     /**
-     * Execute request
+     * Set default client.
+     *
+     * @param string $type
+     */
+    private function setDefaultClient($type)
+    {
+        $this->client = new Client($this->getHost($type), $this->getPort());
+    }
+
+    /**
+     * Execute request.
+     *
      * @param string $uri
      * @param string $query
      * @param array $headers
+     * @param string $addrType
      * @return Response
      */
-    public function request(string $query = '', array $headers = [], string $uri = null)
-    {
+    public function request(
+        string $query = '',
+        array $headers = [],
+        string $uri = null,
+        string $addrType = 'ipv4'
+    ) {
         if ($this->hasError()) {
             return new Response(null, true);
         }
@@ -323,6 +338,9 @@ class Tester
         );
 
         try {
+            if (!$this->client) {
+                $this->setDefaultClient($addrType);
+            }
             $this->response = new Response($this->client->request_data($params, false));
         } catch (\Exception $exception) {
             $this->error("Request failed", $exception);
@@ -415,11 +433,14 @@ class Tester
     {
         $replacementMap = [
             'FILE:LOG' => $this->getFile('log'),
-            'ADDR:IPv4' => $this->getAddr(),
+            'ADDR:IPv4' => $this->getAddr('ipv4'),
+            'ADDR:IPv6' => $this->getAddr('ipv6'),
             'PORT' => $this->getPort(),
         ];
         // Set ADDR alias to IPv4 connection by default
         $replacementMap['ADDR'] = $replacementMap['ADDR:IPv4'];
+
+        //var_dump($replacementMap);
 
         $config = $this->configTemplate;
         foreach ($replacementMap as $placeholder => $value) {
@@ -430,12 +451,36 @@ class Tester
     }
 
     /**
+     * @param string $type
      * @return string
      */
-    private function getAddr()
+    private function getAddr(string $type = 'ipv4')
     {
-        return $this->getHost() . ':' . $this->getPort();
+        return $this->getHost($type) . ':' . $this->getPort();
     }
+
+    /**
+     * @return int
+     */
+    public function getPort()
+    {
+        return 9000 + PHP_INT_SIZE;
+    }
+
+    /**
+     * @param string $type
+     * @return string
+     */
+    public function getHost(string $type = 'ipv4')
+    {
+        switch ($type) {
+            case 'ipv6':
+                return '[::1]';
+            default:
+                return '127.0.0.1';
+        }
+    }
+
 
     /**
      * @param string $extension
@@ -461,22 +506,6 @@ class Tester
         file_put_contents($filePath, $content);
 
         return $filePath;
-    }
-
-    /**
-     * @return int
-     */
-    public function getPort()
-    {
-        return 9000 + PHP_INT_SIZE;
-    }
-
-    /**
-     * @return string
-     */
-    public function getHost()
-    {
-        return '127.0.0.1';
     }
 
     /**
