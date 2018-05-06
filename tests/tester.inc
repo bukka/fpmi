@@ -415,9 +415,11 @@ class Tester
     {
         $replacementMap = [
             'FILE:LOG' => $this->getFile('log'),
-            'ADDR' => $this->getAddr(),
+            'ADDR:IPv4' => $this->getAddr(),
             'PORT' => $this->getPort(),
         ];
+        // Set ADDR alias to IPv4 connection by default
+        $replacementMap['ADDR'] = $replacementMap['ADDR:IPv4'];
 
         $config = $this->configTemplate;
         foreach ($replacementMap as $placeholder => $value) {
@@ -501,11 +503,19 @@ class Tester
     }
 
     /**
-     * Expect starting lines to be logged
+     * Expect starting lines to be logged.
      */
     public function expectLogStartNotices()
     {
         $this->logTool->expectStartingLines($this->getLogLines(2));
+    }
+
+    /**
+     * Expect terminating lines to be logged.
+     */
+    public function expectLogTerminatingNotices()
+    {
+        $this->logTool->expectTerminatorLines($this->getLogLines(-1));
     }
 
     /**

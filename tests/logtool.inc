@@ -290,7 +290,7 @@ class LogTool
      * @param int $idx
      * @return bool
      */
-    public function expectTerminatorLines(array $lines, int $idx)
+    public function expectTerminatorLines(array $lines, int $idx = -1)
     {
         if ($this->getError()) {
             return false;
