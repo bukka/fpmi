@@ -124,7 +124,6 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	int fifo_in = 1, fifo_out = 1;
 	int in_buf = 0;
 	int res;
-	int init_stream_prefix_and_suffix = 1;
 	struct zlog_stream stream;
 
 	if (!arg) {
@@ -132,16 +131,20 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	}
 	child = (struct fpmi_child_s *)arg;
 
-	zlog_stream_init_ex(&stream, ZLOG_WARNING, STDERR_FILENO);
-	zlog_stream_set_decorating(&stream, child->wp->config->decorate_workers_output);
-	zlog_stream_set_wrapping(&stream, ZLOG_TRUE);
-
 	is_stdout = (fd == child->fd_stdout);
 	if (is_stdout) {
 		event = &child->ev_stdout;
 	} else {
 		event = &child->ev_stderr;
 	}
+
+	zlog_stream_init_ex(&stream, ZLOG_WARNING, STDERR_FILENO);
+	zlog_stream_set_decorating(&stream, child->wp->config->decorate_workers_output);
+	zlog_stream_set_wrapping(&stream, ZLOG_TRUE);
+	zlog_stream_set_msg_prefix(&stream, "[pool %s] child %d said into %s: ",
+			child->wp->config->name, (int) child->pid, is_stdout ? "stdout" : "stderr");
+	zlog_stream_set_msg_suffix(&stream, NULL, ", pipe is closed");
+	zlog_stream_set_msg_quoting(&stream, ZLOG_TRUE);
 
 	while (fifo_in || fifo_out) {
 		if (fifo_in) {
@@ -198,13 +201,6 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 						*nl = '\0';
 					}
 
-					if (init_stream_prefix_and_suffix) {
-						zlog_stream_set_msg_prefix(&stream, "[pool %s] child %d said into %s: ",
-								child->wp->config->name, (int) child->pid, is_stdout ? "stdout" : "stderr");
-						zlog_stream_set_msg_suffix(&stream, NULL, ", pipe is closed");
-						zlog_stream_set_msg_quoting(&stream, ZLOG_TRUE);
-						init_stream_prefix_and_suffix = 0;
-					}
 					zlog_stream_str(&stream, buf, strlen(buf));
 
 					if (nl) {
