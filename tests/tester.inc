@@ -282,6 +282,40 @@ class Tester
     }
 
     /**
+     * Check if connection works.
+     *
+     * @param string $host
+     * @param null|string $successMessage
+     * @param null|string $errorMessage
+     * @param int $attempts
+     * @param int $delay
+     */
+    public function checkConnection(
+        $host,
+        $successMessage = 'ok',
+        $errorMessage = null,
+        $attempts = 20,
+        $delay = 50000
+    ) {
+        $i = 0;
+        do {
+            if ($i > 0 && $delay > 0) {
+                usleep($delay);
+            }
+            $fp = @fsockopen($host, $this->getPort());
+        } while ((++$i < $attempts) && !$fp);
+
+        if ($fp) {
+            if ($successMessage !== null) {
+                echo "$successMessage\n";
+            }
+            fclose($fp);
+        } elseif ($errorMessage !== null) {
+            echo "$errorMessage\n";
+        }
+    }
+
+    /**
      * Set default client.
      *
      * @param string $type
@@ -434,7 +468,9 @@ class Tester
         $replacementMap = [
             'FILE:LOG' => $this->getFile('log'),
             'ADDR:IPv4' => $this->getAddr('ipv4'),
+            'ADDR:IPv4:ANY' => $this->getAddr('ipv4-any'),
             'ADDR:IPv6' => $this->getAddr('ipv6'),
+            'ADDR:IPv6:ANY' => $this->getAddr('ipv6-any'),
             'PORT' => $this->getPort(),
         ];
         // Set ADDR alias to IPv4 connection by default
@@ -474,8 +510,12 @@ class Tester
     public function getHost(string $type = 'ipv4')
     {
         switch ($type) {
+            case 'ipv6-any':
+                return '[::]';
             case 'ipv6':
                 return '[::1]';
+            case 'ipv4-any':
+                return '0.0.0.0';
             default:
                 return '127.0.0.1';
         }
