@@ -139,6 +139,16 @@ class Client
     }
 
     /**
+     * Get host.
+     *
+     * @return string
+     */
+    public function getHost()
+    {
+        return $this->_host;
+    }
+
+    /**
      * Define whether or not the FastCGI application should keep the connection
      * alive at the end of a request
      *

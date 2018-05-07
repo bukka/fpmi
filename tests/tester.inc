@@ -402,9 +402,7 @@ class Tester
         );
 
         try {
-            if (!$this->client) {
-                $this->setDefaultClient($host);
-            }
+            $this->setDefaultClient($host);
             $this->response = new Response($this->client->request_data($params, false));
             $this->message($successMessage);
         } catch (\Exception $exception) {
@@ -424,11 +422,13 @@ class Tester
     /**
      * Set default client.
      *
-     * @param string $type
+     * @param string $host
      */
-    private function setDefaultClient($type)
+    private function setDefaultClient($host)
     {
-        $this->client = new Client($this->getHost($type), $this->getPort());
+        if (!$this->client || $this->client->getHost() !== $host) {
+            $this->client = new Client($host, $this->getPort());
+        }
     }
 
     /**
@@ -520,8 +520,6 @@ class Tester
         ];
         // Set ADDR alias to IPv4 connection by default
         $replacementMap['ADDR'] = $replacementMap['ADDR:IPv4'];
-
-        //var_dump($replacementMap);
 
         $config = $this->configTemplate;
         foreach ($replacementMap as $placeholder => $value) {
