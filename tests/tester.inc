@@ -185,12 +185,23 @@ class Tester
      *
      * @param string $configTemplate
      */
-    static public function skipIfConfigFails( string $configTemplate)
+    static public function skipIfConfigFails(string $configTemplate)
     {
         $tester = new self($configTemplate, '', [], self::getCallerFileName());
         $testResult = $tester->testConfig();
         if ($testResult !== null) {
             die("skip $testResult");
+        }
+    }
+
+    /**
+     * Skip test if IPv6 is not supported.
+     */
+    static public function skipIfIPv6IsNotSupported()
+    {
+        @stream_socket_client('tcp://[::1]:0', $errno);
+        if ($errno != 111) {
+            die('skip IPv6 is not supported.');
         }
     }
 

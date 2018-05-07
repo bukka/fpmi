@@ -1,7 +1,10 @@
 --TEST--
 FPMI: Socket for IPv6 connection
 --SKIPIF--
-<?php include "skipif.inc"; ?>
+<?php
+include "skipif.inc";
+FPMI\Tester::skipIfIPv6IsNotSupported();
+?>
 --FILE--
 <?php
 

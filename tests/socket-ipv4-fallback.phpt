@@ -1,7 +1,10 @@
 --TEST--
-FPMI: Test already bound address
+FPMI: Socket port connection falls back to IPv4
 --SKIPIF--
-<?php include "skipif.inc"; ?>
+<?php
+include "skipif.inc";
+FPMI\Tester::skipIfIPv6IsNotSupported();
+?>
 --FILE--
 <?php
 
