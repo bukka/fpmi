@@ -317,46 +317,65 @@ class Tester
         } while ((++$i < $attempts) && !$fp);
 
         if ($fp) {
-            if ($successMessage !== null) {
-                echo "$successMessage\n";
-            }
+            $this->message($successMessage);
             fclose($fp);
-        } elseif ($errorMessage !== null) {
-            echo "$errorMessage\n";
+        } else {
+            $this->message($errorMessage);
         }
     }
 
+
     /**
-     * Set default client.
+     * Execute request with parameters ordered for better checking.
      *
-     * @param string $type
+     * @param string $host
+     * @param string|null $successMessage
+     * @param string|null $errorMessage
+     * @param string $uri
+     * @param string $query
+     * @param array $headers
+     * @return Response
      */
-    private function setDefaultClient($type)
+    public function checkRequest(
+        string $host,
+        string $successMessage = null,
+        string $errorMessage = null,
+        $uri = '/ping',
+        $query = '',
+        $headers = []
+    )
     {
-        $this->client = new Client($this->getHost($type), $this->getPort());
+        return $this->request($query, $headers, $uri, $host, $successMessage, $errorMessage);
     }
+
 
     /**
      * Execute request.
      *
-     * @param string $uri
      * @param string $query
      * @param array $headers
-     * @param string $addrType
+     * @param string|null $uri
+     * @param string|null $host
+     * @param string|null $successMessage
+     * @param string|null $errorMessage
      * @return Response
      */
     public function request(
         string $query = '',
         array $headers = [],
         string $uri = null,
-        string $addrType = 'ipv4'
+        string $host = null,
+        string $successMessage = null,
+        string $errorMessage = null
     ) {
         if ($this->hasError()) {
             return new Response(null, true);
         }
-
         if (is_null($uri)) {
             $uri = $this->makeFile('src.php', $this->code);
+        }
+        if (is_null($host)) {
+            $host = $this->getHost();
         }
 
         $params = array_merge(
@@ -369,8 +388,8 @@ class Tester
                 'REQUEST_URI'       => $uri . ($query ? '?'.$query : ""),
                 'DOCUMENT_URI'      => $uri,
                 'SERVER_SOFTWARE'   => 'php/fcgiclient',
-                'REMOTE_ADDR'       => '127.0.0.1',
-                'REMOTE_PORT'       => '9985',
+                'REMOTE_ADDR'       => $host,
+                'REMOTE_PORT'       => $this->getPort(),
                 'SERVER_ADDR'       => '127.0.0.1',
                 'SERVER_PORT'       => '80',
                 'SERVER_NAME'       => php_uname('n'),
@@ -384,17 +403,32 @@ class Tester
 
         try {
             if (!$this->client) {
-                $this->setDefaultClient($addrType);
+                $this->setDefaultClient($host);
             }
             $this->response = new Response($this->client->request_data($params, false));
+            $this->message($successMessage);
         } catch (\Exception $exception) {
-            $this->error("Request failed", $exception);
-            $this->response =  new Response();
+            if ($errorMessage === null) {
+                $this->error("Request failed", $exception);
+            } else {
+                $this->message($errorMessage);
+            }
+            $this->response = new Response();
         }
         if ($this->debug) {
             $this->response->debugOutput();
         }
         return $this->response;
+    }
+
+    /**
+     * Set default client.
+     *
+     * @param string $type
+     */
+    private function setDefaultClient($type)
+    {
+        $this->client = new Client($this->getHost($type), $this->getPort());
     }
 
     /**
@@ -560,7 +594,17 @@ class Tester
     }
 
     /**
-     * @param $msg
+     * @param string|null $msg
+     */
+    private function message($msg)
+    {
+        if ($msg !== null) {
+            echo "$msg\n";
+        }
+    }
+
+    /**
+     * @param string $msg
      * @param \Exception|null $exception
      */
     private function error($msg, \Exception $exception = null)
@@ -616,9 +660,9 @@ class Tester
         if ($wrapped) {
             $logLines = $this->getLogLines(-1, true);
             if ($this->debug) {
-                echo "-------------- LOG LINES: -------------\n";
+                $this->message("-------------- LOG LINES: -------------");
                 var_dump($logLines);
-                echo "---------------------------------------\n\n";
+                $this->message("---------------------------------------\n");
             }
             $this->logTool->checkWrappedMessage($logLines, true, $decorated);
         } else {
