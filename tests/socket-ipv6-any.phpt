@@ -1,5 +1,5 @@
 --TEST--
-FPMI: Socket for IPv6 connection
+FPMI: Socket for IPv6 any address connection
 --SKIPIF--
 <?php
 include "skipif.inc";
