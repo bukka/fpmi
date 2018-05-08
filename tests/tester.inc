@@ -32,9 +32,9 @@ class Tester
     private $debug;
 
     /**
-     * @var Client
+     * @var array
      */
-    private $client;
+    private $clients;
 
     /**
      * @var LogTool
@@ -339,7 +339,7 @@ class Tester
     /**
      * Execute request with parameters ordered for better checking.
      *
-     * @param string $host
+     * @param string $address
      * @param string|null $successMessage
      * @param string|null $errorMessage
      * @param string $uri
@@ -348,29 +348,29 @@ class Tester
      * @return Response
      */
     public function checkRequest(
-        string $host,
+        string $address,
         string $successMessage = null,
         string $errorMessage = null,
         $uri = '/ping',
         $query = '',
         $headers = []
     ) {
-        return $this->request($query, $headers, $uri, $host, $successMessage, $errorMessage);
+        return $this->request($query, $headers, $uri, $address, $successMessage, $errorMessage);
     }
 
     /**
      * Execute and check ping request.
      *
-     * @param string $host
+     * @param string $address
      * @param string $pingPath
      * @param string $pingResponse
      */
     public function ping(
-        string $host,
+        string $address,
         string $pingResponse = 'pong',
         string $pingPath = '/ping'
     ) {
-        $response = $this->request('', [], $pingPath, $host);
+        $response = $this->request('', [], $pingPath, $address);
         $response->expectBody($pingResponse, 'text/plain');
     }
 
@@ -380,7 +380,7 @@ class Tester
      * @param string $query
      * @param array $headers
      * @param string|null $uri
-     * @param string|null $host
+     * @param string|null $address
      * @param string|null $successMessage
      * @param string|null $errorMessage
      * @return Response
@@ -389,7 +389,7 @@ class Tester
         string $query = '',
         array $headers = [],
         string $uri = null,
-        string $host = null,
+        string $address = null,
         string $successMessage = null,
         string $errorMessage = null
     ) {
@@ -398,9 +398,6 @@ class Tester
         }
         if (is_null($uri)) {
             $uri = $this->makeFile('src.php', $this->code);
-        }
-        if (is_null($host)) {
-            $host = $this->getHost();
         }
 
         $params = array_merge(
@@ -413,8 +410,8 @@ class Tester
                 'REQUEST_URI'       => $uri . ($query ? '?'.$query : ""),
                 'DOCUMENT_URI'      => $uri,
                 'SERVER_SOFTWARE'   => 'php/fcgiclient',
-                'REMOTE_ADDR'       => $host,
-                'REMOTE_PORT'       => $this->getPort(),
+                'REMOTE_ADDR'       => '127.0.0.1',
+                'REMOTE_PORT'       => '7777',
                 'SERVER_ADDR'       => '127.0.0.1',
                 'SERVER_PORT'       => '80',
                 'SERVER_NAME'       => php_uname('n'),
@@ -427,8 +424,9 @@ class Tester
         );
 
         try {
-            $this->setDefaultClient($host);
-            $this->response = new Response($this->client->request_data($params, false));
+            $this->response = new Response(
+                $this->getClient($address)->request_data($params, false)
+            );
             $this->message($successMessage);
         } catch (\Exception $exception) {
             if ($errorMessage === null) {
@@ -445,15 +443,33 @@ class Tester
     }
 
     /**
-     * Set default client.
+     * Get client.
      *
-     * @param string $host
+     * @param string $address
+     * @return Client
      */
-    private function setDefaultClient($host)
+    private function getClient(string $address = null)
     {
-        if (!$this->client || $this->client->getHost() !== $host) {
-            $this->client = new Client($host, $this->getPort());
+        $address = $address ? $this->processTemplate($address) : $this->getAddr();
+        if ($address[0] === '[') {
+            $addressParts = explode(']:', $address);
+            $host = $addressParts[0];
+            if (isset($addressParts[1])) {
+                $host .= ']';
+                $port = $addressParts[1];
+            } else {
+                $port = $this->getPort();
+            }
+        } else {
+            $addressParts = explode(':', $address);
+            $host = $addressParts[0];
+            $port = $addressParts[1] ?? $this->getPort();
         }
+        if (!isset($this->clients[$host][$port])) {
+            $this->clients[$host][$port] = new Client($host, $port);
+        }
+
+        return $this->clients[$host][$port];
     }
 
     /**
@@ -530,10 +546,23 @@ class Tester
     }
 
     /**
+     * Create a config file.
+     *
      * @param string $extension
      * @return string
      */
     private function createConfig($extension = 'ini')
+    {
+        return $this->makeFile($extension, $this->processTemplate($this->configTemplate));
+    }
+
+    /**
+     * Process template string.
+     *
+     * @param string $template
+     * @return string
+     */
+    private function processTemplate(string $template)
     {
         $vars = [
             'FILE:LOG:ACC' => ['getFile', 'acc.log'],
@@ -551,7 +580,8 @@ class Tester
         foreach ($aliases as $aliasName => $aliasValue) {
             $vars[$aliasName] = $vars[$aliasValue];
         }
-        $config = preg_replace_callback(
+
+        return preg_replace_callback(
             '/{{([a-zA-Z0-9:]+)(\[\w+\])?}}/',
             function ($matches) use ($vars) {
                 $varName = $matches[1];
@@ -563,12 +593,10 @@ class Tester
                 $varArgs = $vars[$varName];
                 $functionName = array_shift($varArgs);
                 $varArgs[] = $pool;
-                return call_user_func_array($functionName, $varArgs);
+                return call_user_func_array([$this, $functionName], $varArgs);
             },
-            $this->configTemplate
+            $template
         );
-
-        return $this->makeFile($extension, $config);
     }
 
     /**
@@ -576,7 +604,7 @@ class Tester
      * @param string $pool
      * @return string
      */
-    private function getAddr(string $type = 'ipv4', $pool = 'default')
+    public function getAddr(string $type = 'ipv4', $pool = 'default')
     {
         return $this->getHost($type) . ':' . $this->getPort($pool);
     }
