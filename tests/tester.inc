@@ -76,6 +76,11 @@ class Tester
     private $outDesc;
 
     /**
+     * @var array
+     */
+    private $ports = [];
+
+    /**
      * @var string
      */
     private $error;
@@ -362,8 +367,8 @@ class Tester
      */
     public function ping(
         string $host,
-        string $pingPath = '/ping',
-        string $pingResponse = 'pong'
+        string $pingResponse = 'pong',
+        string $pingPath = '/ping'
     ) {
         $response = $this->request('', [], $pingPath, $host);
         $response->expectBody($pingResponse, 'text/plain');
@@ -530,43 +535,65 @@ class Tester
      */
     private function createConfig($extension = 'ini')
     {
-        $replacementMap = [
-            'FILE:LOG:ACC' => $this->getFile('acc.log'),
-            'FILE:LOG:ERR' => $this->getFile('err.log'),
-            'ADDR:IPv4' => $this->getAddr('ipv4'),
-            'ADDR:IPv4:ANY' => $this->getAddr('ipv4-any'),
-            'ADDR:IPv6' => $this->getAddr('ipv6'),
-            'ADDR:IPv6:ANY' => $this->getAddr('ipv6-any'),
-            'PORT' => $this->getPort(),
+        $vars = [
+            'FILE:LOG:ACC' => ['getFile', 'acc.log'],
+            'FILE:LOG:ERR' => ['getFile', 'err.log'],
+            'ADDR:IPv4' => ['getAddr', 'ipv4'],
+            'ADDR:IPv4:ANY' => ['getAddr', 'ipv4-any'],
+            'ADDR:IPv6' => ['getAddr', 'ipv6'],
+            'ADDR:IPv6:ANY' => ['getAddr', 'ipv6-any'],
+            'PORT' => ['getPort'],
         ];
-        // Set ADDR alias to IPv4 connection by default
-        $replacementMap['ADDR'] = $replacementMap['ADDR:IPv4'];
-        // Set FILE:LOG to error log
-        $replacementMap['FILE:LOG'] = $replacementMap['FILE:LOG:ERR'];
-
-        $config = $this->configTemplate;
-        foreach ($replacementMap as $placeholder => $value) {
-            $config = str_replace('{{' . $placeholder . '}}', $value, $config);
+        $aliases = [
+            'ADDR' => 'ADDR:IPv4',
+            'FILE:LOG' => 'FILE:LOG:ERR',
+        ];
+        foreach ($aliases as $aliasName => $aliasValue) {
+            $vars[$aliasName] = $vars[$aliasValue];
         }
+        $config = preg_replace_callback(
+            '/{{([a-zA-Z0-9:]+)(\[\w+\])?}}/',
+            function ($matches) use ($vars) {
+                $varName = $matches[1];
+                if (!isset($vars[$varName])) {
+                    $this->error("Invalid config variable $varName");
+                    return 'INVALID';
+                }
+                $pool = $matches[2] ?? 'default';
+                $varArgs = $vars[$varName];
+                $functionName = array_shift($varArgs);
+                $varArgs[] = $pool;
+                return call_user_func_array($functionName, $varArgs);
+            },
+            $this->configTemplate
+        );
 
         return $this->makeFile($extension, $config);
     }
 
     /**
      * @param string $type
+     * @param string $pool
      * @return string
      */
-    private function getAddr(string $type = 'ipv4')
+    private function getAddr(string $type = 'ipv4', $pool = 'default')
     {
-        return $this->getHost($type) . ':' . $this->getPort();
+        return $this->getHost($type) . ':' . $this->getPort($pool);
     }
 
     /**
+     * @param string $pool
      * @return int
      */
-    public function getPort()
+    public function getPort($pool = 'default')
     {
-        return 9000 + PHP_INT_SIZE;
+        if (isset($this->ports['values'][$pool])) {
+            return $this->ports['values'][$pool];
+        }
+        $port = ($this->ports['last'] ?? 9000 + PHP_INT_SIZE - 1) + 1;
+        $this->ports['values'][$pool] = $this->ports['last'] = $port;
+
+        return $port;
     }
 
     /**
