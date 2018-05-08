@@ -61,15 +61,20 @@ class Response
 
     /**
      * @param mixed $body
+     * @param string $contentType
      * @return Response
      */
-    public function expectBody($body)
+    public function expectBody($body, $contentType = 'text/html')
     {
         if ($multiLine = is_array($body)) {
             $body = implode("\n", $body);
         }
 
-        if ($this->checkIfValid() && $this->checkDefaultHeaders() && $body !== $this->rawBody) {
+        if (
+            $this->checkIfValid() &&
+            $this->checkDefaultHeaders($contentType) &&
+            $body !== $this->rawBody
+        ) {
             if ($multiLine) {
                 $this->error(
                     "==> The expected body:\n$body\n" .
@@ -157,14 +162,15 @@ class Response
     }
 
     /**
+     * @param string $contentType
      * @return bool
      */
-    private function checkDefaultHeaders()
+    private function checkDefaultHeaders($contentType)
     {
         // check default headers
         return (
             $this->checkHeader('X-Powered-By', '|^PHP/7|', true) &&
-            $this->checkHeader('Content-type', '|^text/html; charset=\w+|', true)
+            $this->checkHeader('Content-type', '|^' . $contentType . ';\s?charset=\w+|', true)
         );
     }
 

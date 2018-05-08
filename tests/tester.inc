@@ -13,7 +13,13 @@ class Tester
     /**
      * @var array
      */
-    static private $supportedFiles = ['log', 'src.php', 'ini', 'skip.ini'];
+    static private $supportedFiles = [
+        'acc.log',
+        'err.log',
+        'src.php',
+        'ini',
+        'skip.ini',
+    ];
 
     /**
      * @var array
@@ -343,11 +349,25 @@ class Tester
         $uri = '/ping',
         $query = '',
         $headers = []
-    )
-    {
+    ) {
         return $this->request($query, $headers, $uri, $host, $successMessage, $errorMessage);
     }
 
+    /**
+     * Execute and check ping request.
+     *
+     * @param string $host
+     * @param string $pingPath
+     * @param string $pingResponse
+     */
+    public function ping(
+        string $host,
+        string $pingPath = '/ping',
+        string $pingResponse = 'pong'
+    ) {
+        $response = $this->request('', [], $pingPath, $host);
+        $response->expectBody($pingResponse, 'text/plain');
+    }
 
     /**
      * Execute request.
@@ -511,7 +531,8 @@ class Tester
     private function createConfig($extension = 'ini')
     {
         $replacementMap = [
-            'FILE:LOG' => $this->getFile('log'),
+            'FILE:LOG:ACC' => $this->getFile('acc.log'),
+            'FILE:LOG:ERR' => $this->getFile('err.log'),
             'ADDR:IPv4' => $this->getAddr('ipv4'),
             'ADDR:IPv4:ANY' => $this->getAddr('ipv4-any'),
             'ADDR:IPv6' => $this->getAddr('ipv6'),
@@ -520,6 +541,8 @@ class Tester
         ];
         // Set ADDR alias to IPv4 connection by default
         $replacementMap['ADDR'] = $replacementMap['ADDR:IPv4'];
+        // Set FILE:LOG to error log
+        $replacementMap['FILE:LOG'] = $replacementMap['FILE:LOG:ERR'];
 
         $config = $this->configTemplate;
         foreach ($replacementMap as $placeholder => $value) {
@@ -706,5 +729,16 @@ class Tester
     public function expectLogAlert(string $message)
     {
         $this->logTool->expectAlert($this->getLastLogLine(), $message);
+    }
+
+    /**
+     * Print content of access log.
+     */
+    public function printAccessLog()
+    {
+        $accessLog = $this->getFile('acc.log');
+        if (is_file($accessLog)) {
+            print file_get_contents($accessLog);
+        }
     }
 }
