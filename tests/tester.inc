@@ -281,7 +281,8 @@ class Tester
          * shell in php (why?!?) we need a little shell trickery, so that we can
          * actually kill php-fpmi */
         $this->masterProcess = proc_open(
-            "killit () { kill \$child; }; trap killit TERM; $cmd 2>&1 & child=\$!; wait",
+            "killit () { kill \$child 2> /dev/null; }; " .
+                "trap killit TERM; $cmd 2>&1 & child=\$!; wait",
             $desc,
             $pipes
         );
