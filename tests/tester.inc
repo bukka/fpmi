@@ -659,6 +659,17 @@ class Tester
         }
     }
 
+    /**
+     * Get listen address.
+     *
+     * @param string|null $template
+     * @return string
+     */
+    public function getListen($template = null)
+    {
+        return $template ? $this->processTemplate($template) : $this->getAddr();
+    }
+
 
     /**
      * @param string $extension
