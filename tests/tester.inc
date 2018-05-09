@@ -19,6 +19,7 @@ class Tester
         'src.php',
         'ini',
         'skip.ini',
+        '*.sock'
     ];
 
     /**
@@ -117,8 +118,8 @@ class Tester
             )
         );
 
-        foreach ($filesToClean as $filePath) {
-            if (is_file($filePath)) {
+        foreach ($filesToClean as $filePattern) {
+            foreach (glob($filePattern) as $filePath) {
                 unlink($filePath);
             }
         }
@@ -451,7 +452,10 @@ class Tester
     private function getClient(string $address = null)
     {
         $address = $address ? $this->processTemplate($address) : $this->getAddr();
-        if ($address[0] === '[') {
+        if ($address[0] === '/') { // uds
+            $host = 'unix://' . $address;
+            $port = -1;
+        } elseif ($address[0] === '[') { // ipv6
             $addressParts = explode(']:', $address);
             $host = $addressParts[0];
             if (isset($addressParts[1])) {
@@ -460,7 +464,7 @@ class Tester
             } else {
                 $port = $this->getPort();
             }
-        } else {
+        } else { // ipv4
             $addressParts = explode(':', $address);
             $host = $addressParts[0];
             $port = $addressParts[1] ?? $this->getPort();
@@ -571,7 +575,8 @@ class Tester
             'ADDR:IPv4:ANY' => ['getAddr', 'ipv4-any'],
             'ADDR:IPv6' => ['getAddr', 'ipv6'],
             'ADDR:IPv6:ANY' => ['getAddr', 'ipv6-any'],
-            'PORT' => ['getPort'],
+            'ADDR:UDS' => ['getAddr', 'uds'],
+            'PORT' => ['getPort', 'ip'],
         ];
         $aliases = [
             'ADDR' => 'ADDR:IPv4',
@@ -606,15 +611,26 @@ class Tester
      */
     public function getAddr(string $type = 'ipv4', $pool = 'default')
     {
-        return $this->getHost($type) . ':' . $this->getPort($pool);
+        $port = $this->getPort($type, $pool, true);
+        if ($type === 'uds') {
+            return $this->getFile($port . '.sock');
+        }
+
+        return $this->getHost($type) . ':' . $port;
     }
 
     /**
+     * @param string $type
      * @param string $pool
+     * @param bool $useAsId
      * @return int
      */
-    public function getPort($pool = 'default')
+    public function getPort(string $type = 'ip', $pool = 'default', $useAsId = false)
     {
+        if ($type === 'uds' && !$useAsId) {
+            return -1;
+        }
+
         if (isset($this->ports['values'][$pool])) {
             return $this->ports['values'][$pool];
         }
@@ -649,10 +665,6 @@ class Tester
      */
     private function getFile(string $extension)
     {
-        if (!in_array($extension, self::$supportedFiles)) {
-            throw new \InvalidArgumentException("The extension $extension is not supported");
-        }
-
         return $this->fileName . $extension;
     }
 
