@@ -20,7 +20,7 @@ EOT;
 $expectedStatusData = [
     'pool'                 => 'unconfined',
     'process manager'      => 'static',
-    //'accepted conn'        => 1, -- TODO: single client
+    'accepted conn'        => 1,
     'listen queue'         => 0,
     'max listen queue'     => 0,
     'idle processes'       => 0,

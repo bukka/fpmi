@@ -33,6 +33,11 @@ class Tester
     private $debug;
 
     /**
+     * @var array
+     */
+    private $clients;
+
+    /**
      * @var LogTool
      */
     private $logTool;
@@ -493,8 +498,11 @@ class Tester
             $host = $addressParts[0];
             $port = $addressParts[1] ?? $this->getPort();
         }
+        if (!isset($this->clients[$host][$port])) {
+            $this->clients[$host][$port] = new Client($host, $port);
+        }
 
-        return new Client($host, $port);
+        return $this->clients[$host][$port];
     }
 
     /**
