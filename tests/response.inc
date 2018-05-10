@@ -99,11 +99,16 @@ class Response
     }
 
     /**
+     * @param string $contentType
      * @return string|null
      */
-    public function getBody()
+    public function getBody($contentType = 'text/html')
     {
-        return ($this->checkIfValid() && $this->checkDefaultHeaders()) ? $this->rawBody : null;
+        if ($this->checkIfValid() && $this->checkDefaultHeaders($contentType)) {
+            return $this->rawBody;
+        }
+
+        return null;
     }
 
     /**
@@ -170,7 +175,7 @@ class Response
         // check default headers
         return (
             $this->checkHeader('X-Powered-By', '|^PHP/7|', true) &&
-            $this->checkHeader('Content-type', '|^' . $contentType . ';\s?charset=\w+|', true)
+            $this->checkHeader('Content-type', '|^' . $contentType . '(;\s?charset=\w+)?|', true)
         );
     }
 
@@ -182,11 +187,12 @@ class Response
      */
     private function checkHeader(string $name, string $value, $useRegex = false)
     {
+        $lcName = strtolower($name);
         $headers = $this->getHeaders();
-        if (!isset($headers[$name])) {
+        if (!isset($headers[$lcName])) {
             return $this->error("The header $name is not present");
         }
-        $header = $headers[$name];
+        $header = $headers[$lcName];
 
         if (!$useRegex) {
             if ($header === $value) {
@@ -222,7 +228,7 @@ class Response
             if ($colonPosition === false) {
                 $this->error("Invalid header row (no colon): $headerRow");
             }
-            $headers[substr($headerRow, 0, $colonPosition)] = trim(
+            $headers[strtolower(substr($headerRow, 0, $colonPosition))] = trim(
                 substr($headerRow, $colonPosition + 1)
             );
         }

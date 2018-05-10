@@ -33,11 +33,6 @@ class Tester
     private $debug;
 
     /**
-     * @var array
-     */
-    private $clients;
-
-    /**
      * @var LogTool
      */
     private $logTool;
@@ -377,6 +372,34 @@ class Tester
     }
 
     /**
+     * Execute and check status request(s).
+     *
+     * @param array $expectedFields
+     * @param string|null $address
+     * @param string $statusPath
+     * @param mixed $formats
+     * @throws \Exception
+     */
+    public function status(
+        array $expectedFields,
+        string $address = null,
+        string $statusPath = '/status',
+        $formats = ['plain', 'html', 'xml', 'json']
+    ) {
+        if (!is_array($formats)) {
+            $formats = [$formats];
+        }
+
+        require_once "status.inc";
+        $status = new Status();
+        foreach ($formats as $format) {
+            $query = $format === 'plain' ? '' : $format;
+            $response = $this->request($query, [], $statusPath, $address);
+            $status->checkStatus($response, $expectedFields, $format);
+        }
+    }
+
+    /**
      * Execute request.
      *
      * @param string $query
@@ -470,11 +493,8 @@ class Tester
             $host = $addressParts[0];
             $port = $addressParts[1] ?? $this->getPort();
         }
-        if (!isset($this->clients[$host][$port])) {
-            $this->clients[$host][$port] = new Client($host, $port);
-        }
 
-        return $this->clients[$host][$port];
+        return new Client($host, $port);
     }
 
     /**
