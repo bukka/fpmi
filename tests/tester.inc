@@ -413,6 +413,7 @@ class Tester
      * @param string|null $address
      * @param string|null $successMessage
      * @param string|null $errorMessage
+     * @param bool $connKeepAlive
      * @return Response
      */
     public function request(
@@ -421,7 +422,8 @@ class Tester
         string $uri = null,
         string $address = null,
         string $successMessage = null,
-        string $errorMessage = null
+        string $errorMessage = null,
+        bool $connKeepAlive = false
     ) {
         if ($this->hasError()) {
             return new Response(null, true);
@@ -455,7 +457,7 @@ class Tester
 
         try {
             $this->response = new Response(
-                $this->getClient($address)->request_data($params, false)
+                $this->getClient($address, $connKeepAlive)->request_data($params, false)
             );
             $this->message($successMessage);
         } catch (\Exception $exception) {
@@ -476,9 +478,10 @@ class Tester
      * Get client.
      *
      * @param string $address
+     * @param bool $keepAlive
      * @return Client
      */
-    private function getClient(string $address = null)
+    private function getClient(string $address = null, $keepAlive = false)
     {
         $address = $address ? $this->processTemplate($address) : $this->getAddr();
         if ($address[0] === '/') { // uds
@@ -498,8 +501,15 @@ class Tester
             $host = $addressParts[0];
             $port = $addressParts[1] ?? $this->getPort();
         }
+
+        if (!$keepAlive) {
+            return new Client($host, $port);
+        }
+
         if (!isset($this->clients[$host][$port])) {
-            $this->clients[$host][$port] = new Client($host, $port);
+            $client = new Client($host, $port);
+            $client->setKeepAlive(true);
+            $this->clients[$host][$port] = $client;
         }
 
         return $this->clients[$host][$port];
