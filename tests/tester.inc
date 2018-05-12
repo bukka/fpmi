@@ -19,7 +19,8 @@ class Tester
         'src.php',
         'ini',
         'skip.ini',
-        '*.sock'
+        'pid',
+        '*.sock',
     ];
 
     /**
@@ -567,6 +568,22 @@ class Tester
     }
 
     /**
+     * Send signal to the supplied PID or the server PID.
+     *
+     * @param string $signal
+     * @param int|null $pid
+     * @return string
+     */
+    public function signal($signal, int $pid = null)
+    {
+        if (is_null($pid)) {
+            $pid = $this->getPid();
+        }
+
+        return exec("kill -$signal $pid");
+    }
+
+    /**
      * Terminate master process
      */
     public function terminate()
@@ -610,6 +627,7 @@ class Tester
         $vars = [
             'FILE:LOG:ACC' => ['getFile', 'acc.log'],
             'FILE:LOG:ERR' => ['getFile', 'err.log'],
+            'FILE:PID' => ['getFile', 'pid'],
             'ADDR:IPv4' => ['getAddr', 'ipv4'],
             'ADDR:IPv4:ANY' => ['getAddr', 'ipv4-any'],
             'ADDR:IPv6' => ['getAddr', 'ipv6'],
@@ -706,6 +724,25 @@ class Tester
     public function getListen($template = null)
     {
         return $template ? $this->processTemplate($template) : $this->getAddr();
+    }
+
+    /**
+     * Get PID.
+     *
+     * @return int
+     */
+    public function getPid()
+    {
+        $pidFile = $this->getFile('pid');
+        if (!is_file($pidFile)) {
+            return (int) $this->error("PID file has not been created");
+        }
+        $pidContent = file_get_contents($pidFile);
+        if (!is_numeric($pidContent)) {
+            return (int) $this->error("PID content '$pidContent' is not integer");
+        }
+
+        return (int) $pidContent;
     }
 
 
