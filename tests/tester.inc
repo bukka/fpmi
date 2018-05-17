@@ -316,9 +316,9 @@ class Tester
      * @param int $delay
      */
     public function checkConnection(
-        $host,
-        $successMessage = 'ok',
-        $errorMessage = null,
+        $host = '127.0.0.1',
+        $successMessage = null,
+        $errorMessage = 'Connection failed',
         $attempts = 20,
         $delay = 50000
     ) {
@@ -883,6 +883,19 @@ class Tester
     public function expectLogAlert(string $message)
     {
         $this->logTool->expectAlert($this->getLastLogLine(), $message);
+    }
+
+    /**
+     * Expect no log lines to be logged
+     */
+    public function expectNoLogMessages()
+    {
+        $logLines = $this->getLogLines(-1, true);
+        if (!empty($logLines)) {
+            $this->error(
+                "Expected no log lines but following lines logged:\n" . implode("\n", $logLines)
+            );
+        }
     }
 
     /**
