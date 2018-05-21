@@ -322,7 +322,14 @@ class LogTool
         $pattern = sprintf('/^%s %s: %s$/', self::P_TIME, $type, $expectedMessage);
 
         if (preg_match($pattern, $line, $matches) === 0) {
-            return $this->error("The $type '$line' does not match expected message '$expectedMessage'");
+            var_dump(preg_match('/' . $expectedMessage . '/', $line));
+            return $this->error(
+                "The $type does not match expected message:\n" .
+                "- PATTERN: $pattern\n" .
+                "- MESSAGE: $line\n" .
+                "- EXPECT: '$expectedMessage'\n" .
+                "- ACTUAL: '" . substr($line, strpos($line, $type) + strlen($type) + 2) . "'"
+            );
         }
     }
 
