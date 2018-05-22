@@ -310,12 +310,16 @@ class LogTool
      * @param string $type
      * @param string $line
      * @param string $expectedMessage
+     * @param string|null $pool
      * @return bool
      */
-    public function expectEntry(string $type, string $line, string $expectedMessage)
+    public function expectEntry(string $type, string $line, string $expectedMessage, $pool = null)
     {
         if ($this->getError()) {
             return false;
+        }
+        if ($pool !== null) {
+            $expectedMessage = '\[pool ' . $pool . '\] ' . $expectedMessage;
         }
 
         $line = rtrim($line);
@@ -336,51 +340,56 @@ class LogTool
     /**
      * @param string $line
      * @param string $expectedMessage
+     * @param string|null $pool
      * @return bool
      */
-    public function expectDebug(string $line, string $expectedMessage)
+    public function expectDebug(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('DEBUG', $line, $expectedMessage);
+        return $this->expectEntry('DEBUG', $line, $expectedMessage, $pool);
     }
 
     /**
      * @param string $line
      * @param string $expectedMessage
+     * @param string|null $pool
      * @return bool
      */
-    public function expectNotice(string $line, string $expectedMessage)
+    public function expectNotice(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('NOTICE', $line, $expectedMessage);
+        return $this->expectEntry('NOTICE', $line, $expectedMessage, $pool);
     }
 
     /**
      * @param string $line
      * @param string $expectedMessage
+     * @param string|null $pool
      * @return bool
      */
-    public function expectWarning(string $line, string $expectedMessage)
+    public function expectWarning(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('WARNING', $line, $expectedMessage);
+        return $this->expectEntry('WARNING', $line, $expectedMessage, $pool);
     }
 
     /**
      * @param string $line
      * @param string $expectedMessage
+     * @param string|null $pool
      * @return bool
      */
-    public function expectError(string $line, string $expectedMessage)
+    public function expectError(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('ERROR', $line, $expectedMessage);
+        return $this->expectEntry('ERROR', $line, $expectedMessage, $pool);
     }
 
     /**
      * @param string $line
      * @param string $expectedMessage
+     * @param string|null $pool
      * @return bool
      */
-    public function expectAlert(string $line, string $expectedMessage)
+    public function expectAlert(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('ALERT', $line, $expectedMessage);
+        return $this->expectEntry('ALERT', $line, $expectedMessage, $pool);
     }
 
 

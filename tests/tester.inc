@@ -847,42 +847,47 @@ class Tester
 
     /**
      * @param string $message
+     * @param string|null $pool
      */
-    public function expectLogDebug(string $message)
+    public function expectLogDebug(string $message, $pool = null)
     {
-        $this->logTool->expectDebug($this->getLastLogLine(), $message);
+        $this->logTool->expectDebug($this->getLastLogLine(), $message, $pool);
     }
 
     /**
      * @param string $message
+     * @param string|null $pool
      */
-    public function expectLogNotice(string $message)
+    public function expectLogNotice(string $message, $pool = null)
     {
-        $this->logTool->expectNotice($this->getLastLogLine(), $message);
+        $this->logTool->expectNotice($this->getLastLogLine(), $message, $pool);
     }
 
     /**
      * @param string $message
+     * @param string|null $pool
      */
-    public function expectLogWarning(string $message)
+    public function expectLogWarning(string $message, $pool = null)
     {
-        $this->logTool->expectWarning($this->getLastLogLine(), $message);
+        $this->logTool->expectWarning($this->getLastLogLine(), $message, $pool);
     }
 
     /**
      * @param string $message
+     * @param string|null $pool
      */
-    public function expectLogError(string $message)
+    public function expectLogError(string $message, $pool = null)
     {
-        $this->logTool->expectError($this->getLastLogLine(), $message);
+        $this->logTool->expectError($this->getLastLogLine(), $message, $pool);
     }
 
     /**
      * @param string $message
+     * @param string|null $pool
      */
-    public function expectLogAlert(string $message)
+    public function expectLogAlert(string $message, $pool = null)
     {
-        $this->logTool->expectAlert($this->getLastLogLine(), $message);
+        $this->logTool->expectAlert($this->getLastLogLine(), $message, $pool);
     }
 
     /**

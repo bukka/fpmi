@@ -26,7 +26,8 @@ EOT;
 $tester = new FPMI\Tester($cfg);
 $tester->start();
 $tester->expectLogNotice(
-    "\[pool unconfined\] pm.start_servers is not set. It's been set to 2."
+    "pm.start_servers is not set. It's been set to 2.",
+    'unconfined'
 );
 $tester->expectLogStartNotices();
 $tester->terminate();

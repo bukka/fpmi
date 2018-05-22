@@ -27,7 +27,8 @@ EOT;
 $tester = new FPMI\Tester($cfg);
 $tester->start();
 $tester->expectLogNotice(
-    "\[pool unconfined\] 'user' directive is ignored when FPMI is not running as root"
+    "'user' directive is ignored when FPMI is not running as root",
+    'unconfined'
 );
 $tester->expectLogStartNotices();
 $tester->terminate();
