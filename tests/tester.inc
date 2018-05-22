@@ -826,7 +826,7 @@ class Tester
      */
     public function expectLogMessage(
         string $message,
-        int $limit,
+        int $limit = 1024,
         int $repeat = 0,
         bool $wrapped = true,
         bool $decorated = true
