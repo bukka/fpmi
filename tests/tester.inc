@@ -818,6 +818,8 @@ class Tester
     }
 
     /**
+     * Expect log message that can span multiple lines.
+     *
      * @param string $message
      * @param int $limit
      * @param int $repeat
@@ -841,8 +843,26 @@ class Tester
             }
             $this->logTool->checkWrappedMessage($logLines, true, $decorated);
         } else {
+            var_dump($this->response);
             $this->logTool->checkTruncatedMessage($this->response->getErrorData());
         }
+    }
+
+    /**
+     * Expect a single log line.
+     *
+     * @param string $message
+     */
+    public function expectLogLine(string $message)
+    {
+        $messageLen = strlen($message);
+        $limit = $messageLen > 1024 ? $messageLen + 16 : 1024;
+        $this->logTool->setExpectedMessage($message, $limit);
+        $logLines = $this->getLogLines(1, true);
+        if ($this->debug) {
+            $this->message("LOG LINE: " . ($logLines[0] ?? ''));
+        }
+        $this->logTool->checkWrappedMessage($logLines, false);
     }
 
     /**

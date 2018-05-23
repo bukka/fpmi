@@ -253,12 +253,12 @@ class LogTool
         if ($expectedMessage !== $matchedMessage) {
             return $this->error(
                 sprintf(
-                    "The actual string(%d) '%s' does not match expected string(%d) '%s'",
+                    "The actual string(%d) does not match expected string(%d):\n",
                     strlen($matchedMessage),
-                    $matchedMessage,
-                    strlen($expectedMessage),
-                    $expectedMessage
-                )
+                    strlen($expectedMessage)
+                ) .
+                "- EXPECT: '$expectedMessage'\n" .
+                "- ACTUAL: '$matchedMessage'"
             );
         }
 

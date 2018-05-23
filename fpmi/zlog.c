@@ -390,7 +390,7 @@ static inline ssize_t zlog_stream_unbuffered_write(
 			return written;
 		}
 		/* this would be used in case of an option for disabling wrapping in direct write */
-		stream->finished = finished = 1;
+		finished = 1;
 		if (required_len == zlog_limit) {
 			append = NULL;
 		} else {
@@ -405,6 +405,9 @@ static inline ssize_t zlog_stream_unbuffered_write(
 		/* currently written will be always len as the write is blocking
 		 * - this should be address if we change to non-blocking write */
 		stream->len += written;
+		if (finished) {
+			stream->len = 0;
+		}
 	}
 
 	return written;
@@ -706,12 +709,13 @@ ssize_t zlog_stream_format(struct zlog_stream *stream, const char *fmt, ...) /* 
 
 ssize_t zlog_stream_str(struct zlog_stream *stream, const char *str, size_t str_len) /* {{{ */
 {
-	if (stream->finished) {
-		return 0;
-	}
-
 	if (stream->use_buffer) {
-		return zlog_stream_buf_append(stream, str, str_len);
+		ssize_t written = zlog_stream_buf_append(stream, str, str_len);
+		if (stream->finished) {
+			stream->len = 0;
+		}
+
+		return written;
 	}
 
 	return zlog_stream_unbuffered_write(stream, str, str_len);
@@ -794,24 +798,22 @@ static inline void zlog_stream_finish_direct_suffix(struct zlog_stream *stream) 
 zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 {
 	if (stream->len == 0) {
-		stream->finished = 1;
-		return 1;
+		return ZLOG_TRUE;
 	}
 	if (stream->use_buffer) {
 		if (stream->decorate) {
 			zlog_stream_finish_buffer_suffix(stream);
 		}
 		zlog_stream_buf_flush(stream);
-	} else if (!stream->finished) {
+	} else {
 		if (stream->decorate) {
 			zlog_stream_finish_direct_suffix(stream);
 		} else {
 			zlog_stream_direct_write(stream, "\n", 1);
 		}
 	}
-	stream->finished = 1;
 
-	return 1;
+	return ZLOG_TRUE;
 }
 /* }}} */
 

@@ -179,37 +179,22 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 				fifo_out = 0;
 			} else {
 				char *nl;
-				int should_print = 0;
-				buf[in_buf] = '\0';
 
-				/* FIXME: there might be binary data */
-
-				/* we should print if no more space in the buffer */
-				if (in_buf == max_buf_size - 1) {
-					should_print = 1;
-				}
-
-				/* we should print if no more data to come */
-				if (!fifo_in) {
-					should_print = 1;
-				}
-
-				nl = strchr(buf, '\n');
-				if (nl || should_print) {
-
-					if (nl) {
-						*nl = '\0';
-					}
-
-					zlog_stream_str(&stream, buf, strlen(buf));
-
-					if (nl) {
-						int out_buf = 1 + nl - buf;
-						memmove(buf, buf + out_buf, in_buf - out_buf);
-						in_buf -= out_buf;
-					} else {
-						in_buf = 0;
-					}
+				nl = memchr(buf, '\n', in_buf);
+				if (nl) {
+					/* we should print each new line int the new message */
+					int out_len = nl - buf;
+					zlog_stream_str(&stream, buf, out_len);
+					zlog_stream_finish(&stream);
+					/* skip new line */
+					out_len++;
+					/* move data in the buffer */
+					memmove(buf, buf + out_len, in_buf - out_len);
+					in_buf -= out_len;
+				} else if (in_buf == max_buf_size - 1 || !fifo_in) {
+					/* we should print if no more space in the buffer or no more data to come */
+					zlog_stream_str(&stream, buf, in_buf);
+					in_buf = 0;
 				}
 			}
 		}
