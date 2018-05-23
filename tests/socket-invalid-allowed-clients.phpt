@@ -28,9 +28,9 @@ $tester->start();
 $tester->expectLogStartNotices();
 $tester->checkRequest('127.0.0.1', 'Req: ok', 'Req: error');
 $tester->terminate();
-$tester->expectLogMessage("ERROR: Wrong IP address 'xxx' in listen.allowed_clients");
-$tester->expectLogMessage("ERROR: There are no allowed .*");
-$tester->expectLogMessage("ERROR: Connection disallowed: IP address '127.0.0.1' has been dropped.");
+$tester->expectLogLine("ERROR: Wrong IP address 'xxx' in listen.allowed_clients");
+$tester->expectLogLine("ERROR: There are no allowed addresses");
+$tester->expectLogLine("ERROR: Connection disallowed: IP address '127.0.0.1' has been dropped.");
 $tester->expectLogTerminatingNotices();
 $tester->close();
 
