@@ -798,7 +798,7 @@ static inline void zlog_stream_finish_direct_suffix(struct zlog_stream *stream) 
 
 zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 {
-	if (stream->finished) {
+	if (stream->finished || stream->len == 0) {
 		return ZLOG_TRUE;
 	}
 
