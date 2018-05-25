@@ -66,6 +66,7 @@ struct zlog_stream {
 	unsigned int use_stderr:1;
 	unsigned int prefix_buffer:1;
 	unsigned int finished:1;
+	unsigned int full:1;
 	unsigned int wrap:1;
 	unsigned int msg_quote:1;
 	unsigned int decorate:1;

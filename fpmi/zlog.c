@@ -347,7 +347,6 @@ static ssize_t zlog_stream_direct_write(
 static inline ssize_t zlog_stream_unbuffered_write(
 		struct zlog_stream *stream, const char *buf, size_t len) /* {{{ */
 {
-	int finished = 0;
 	const char *append;
 	size_t append_len = 0, required_len, reserved_len;
 	ssize_t written;
@@ -390,7 +389,7 @@ static inline ssize_t zlog_stream_unbuffered_write(
 			return written;
 		}
 		/* this would be used in case of an option for disabling wrapping in direct write */
-		finished = 1;
+		stream->full = 1;
 		if (required_len == zlog_limit) {
 			append = NULL;
 		} else {
@@ -405,9 +404,6 @@ static inline ssize_t zlog_stream_unbuffered_write(
 		/* currently written will be always len as the write is blocking
 		 * - this should be address if we change to non-blocking write */
 		stream->len += written;
-		if (finished) {
-			stream->len = 0;
-		}
 	}
 
 	return written;
@@ -507,7 +503,7 @@ static ssize_t zlog_stream_buf_append(
 	}
 
 	stream->len = zlog_truncate_buf(stream->buf, stream->len, 0);
-	stream->finished = 1;
+	stream->full = 1;
 	return available_len;
 }
 /* }}} */
@@ -709,13 +705,18 @@ ssize_t zlog_stream_format(struct zlog_stream *stream, const char *fmt, ...) /* 
 
 ssize_t zlog_stream_str(struct zlog_stream *stream, const char *str, size_t str_len) /* {{{ */
 {
-	if (stream->use_buffer) {
-		ssize_t written = zlog_stream_buf_append(stream, str, str_len);
-		if (stream->finished) {
-			stream->len = 0;
-		}
+	/* reset stream if it is finished */
+	if (stream->finished) {
+		stream->finished = 0;
+		stream->len = 0;
+		stream->full = 0;
+	} else if (stream->full) {
+		/* do not write anything if the stream is full */
+		return 0;
+	}
 
-		return written;
+	if (stream->use_buffer) {
+		return zlog_stream_buf_append(stream, str, str_len);
 	}
 
 	return zlog_stream_unbuffered_write(stream, str, str_len);
@@ -797,9 +798,10 @@ static inline void zlog_stream_finish_direct_suffix(struct zlog_stream *stream) 
 
 zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 {
-	if (stream->len == 0) {
+	if (stream->finished) {
 		return ZLOG_TRUE;
 	}
+
 	if (stream->use_buffer) {
 		if (stream->decorate) {
 			zlog_stream_finish_buffer_suffix(stream);
@@ -812,6 +814,7 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 			zlog_stream_direct_write(stream, "\n", 1);
 		}
 	}
+	stream->finished = 1;
 
 	return ZLOG_TRUE;
 }

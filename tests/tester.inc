@@ -843,7 +843,6 @@ class Tester
             }
             $this->logTool->checkWrappedMessage($logLines, true, $decorated);
         } else {
-            var_dump($this->response);
             $this->logTool->checkTruncatedMessage($this->response->getErrorData());
         }
     }
