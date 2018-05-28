@@ -549,12 +549,19 @@ class Tester
     public function getLogLines(int $number = 1, bool $skipBlank = false, string $ignore = 'systemd')
     {
         $lines = [];
+        $read = [$this->outDesc];
+        $write = null;
+        $except = null;
         /* Read $n lines or until EOF */
         while ($number > 0 || ($number < 0 && !feof($this->outDesc))) {
-            $line = fgets($this->outDesc);
-            if ((empty($ignore) || !strpos($line, $ignore)) && (!$skipBlank || strlen(trim($line)) > 0)) {
-                $lines[] = $line;
-                $number--;
+            if (stream_select($read, $write, $except, 2 )) {
+                $line = fgets($this->outDesc);
+                if ((empty($ignore) || !strpos($line, $ignore)) && (!$skipBlank || strlen(trim($line)) > 0)) {
+                    $lines[] = $line;
+                    $number--;
+                }
+            } else {
+                break;
             }
         }
 
