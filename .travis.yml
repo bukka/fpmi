@@ -1,0 +1,11 @@
+language: c
+
+env:
+  - PHP="PHP-7.1"
+  - PHP="PHP-7.2"
+  - PHP="master"
+
+before_script: ./travis/ci.sh
+
+script:
+  - ./php-src/sapi/cli/php php-src/run-tests.php -p `pwd`/php-src/sapi/cli/php --offline --show-diff --set-timeout 120 php-src/sapi/fpmi/tests
