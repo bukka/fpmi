@@ -96,10 +96,12 @@ class Tester
 
     /**
      * Clean all the created files up
+     *
+     * @param int $backTraceIndex
      */
-    static public function clean()
+    static public function clean($backTraceIndex = 1)
     {
-        $filePrefix = self::getCallerFileName();
+        $filePrefix = self::getCallerFileName($backTraceIndex);
         if (substr($filePrefix, -6) === 'clean.') {
             $filePrefix = substr($filePrefix, 0, -6);
         }
@@ -127,13 +129,14 @@ class Tester
     }
 
     /**
+     * @param int $backTraceIndex
      * @return string
      */
-    static private function getCallerFileName()
+    static private function getCallerFileName($backTraceIndex = 1)
     {
         $backtrace = debug_backtrace();
-        if (isset($backtrace[1]['file'])) {
-            $filePath = $backtrace[1]['file'];
+        if (isset($backtrace[$backTraceIndex]['file'])) {
+            $filePath = $backtrace[$backTraceIndex]['file'];
         } else {
             $filePath = __FILE__;
         }
@@ -203,6 +206,7 @@ class Tester
         $tester = new self($configTemplate, '', [], self::getCallerFileName());
         $testResult = $tester->testConfig();
         if ($testResult !== null) {
+            self::clean(2);
             die("skip $testResult");
         }
     }
