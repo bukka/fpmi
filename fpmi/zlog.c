@@ -521,8 +521,11 @@ static inline void zlog_stream_init_internal(
 	stream->use_fd = fd > 0;
 	stream->use_buffer = zlog_buffering || external_logger != NULL || stream->use_syslog;
 	stream->buf_init_size = capacity;
-	stream->use_stderr = fd != STDERR_FILENO && fd != STDOUT_FILENO && fd != -1 &&
-			!launched && (flags & ZLOG_LEVEL_MASK) >= ZLOG_NOTICE;
+	stream->use_stderr = fd < 0 ||
+			(
+				fd != STDERR_FILENO && fd != STDOUT_FILENO && !launched &&
+				(flags & ZLOG_LEVEL_MASK) >= ZLOG_NOTICE
+			);
 	stream->prefix_buffer = (flags & ZLOG_LEVEL_MASK) >= zlog_level &&
 			(stream->use_fd || stream->use_syslog);
 	stream->fd = fd > -1 ? fd : STDERR_FILENO;
