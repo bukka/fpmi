@@ -7,5 +7,9 @@ env:
 
 before_script: ./travis/ci.sh
 
+branches:
+  only:
+    - master
+
 script:
   - ./php-src/sapi/cli/php php-src/run-tests.php -p `pwd`/php-src/sapi/cli/php --offline --show-diff --set-timeout 120 php-src/sapi/fpmi/tests
