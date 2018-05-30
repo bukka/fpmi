@@ -11,6 +11,11 @@ require_once 'response.inc';
 class Tester
 {
     /**
+     * Config directory for included files
+     */
+    const CONF_DIR = __DIR__ . '/conf.d';
+
+    /**
      * @var array
      */
     static private $supportedFiles = [
@@ -120,11 +125,18 @@ class Tester
                 self::$filesToClean
             )
         );
-
+        // clean all the root files
         foreach ($filesToClean as $filePattern) {
             foreach (glob($filePattern) as $filePath) {
                 unlink($filePath);
             }
+        }
+        // clean config files
+        if (is_dir(self::CONF_DIR)) {
+            foreach(glob(self::CONF_DIR . '/*.conf') as $name) {
+                unlink($name);
+            }
+            rmdir(self::CONF_DIR);
         }
     }
 
@@ -200,6 +212,7 @@ class Tester
      * Skip test if config file is invalid.
      *
      * @param string $configTemplate
+     * @throws \Exception
      */
     static public function skipIfConfigFails(string $configTemplate)
     {
@@ -225,13 +238,13 @@ class Tester
     /**
      * Tester constructor.
      *
-     * @param string $configTemplate
+     * @param string|array $configTemplate
      * @param string $code
      * @param array $options
      * @param string $fileName
      */
     public function __construct(
-        string $configTemplate,
+        $configTemplate,
         string $code = '',
         array $options = [],
         $fileName = null
@@ -257,6 +270,7 @@ class Tester
      * Test configuration file.
      *
      * @return null|string
+     * @throws \Exception
      */
     public function testConfig()
     {
@@ -275,6 +289,7 @@ class Tester
      *
      * @param string $extraArgs
      * @return bool
+     * @throws \Exception
      */
     public function start(string $extraArgs = '')
     {
@@ -621,10 +636,33 @@ class Tester
      *
      * @param string $extension
      * @return string
+     * @throws \Exception
      */
     private function createConfig($extension = 'ini')
     {
-        return $this->makeFile($extension, $this->processTemplate($this->configTemplate));
+        if (is_array($this->configTemplate)) {
+            $configTemplates = $this->configTemplate;
+            if (!isset($configTemplates['main'])) {
+                throw new \Exception('The config template array has to have main config');
+            }
+            $mainTemplate = $configTemplates['main'];
+            unset($configTemplates['main']);
+            if (!is_dir(self::CONF_DIR)) {
+                mkdir(self::CONF_DIR);
+            }
+            foreach ($configTemplates as $name => $configTemplate) {
+                $this->makeFile(
+                    'conf',
+                    $this->processTemplate($configTemplate),
+                    self::CONF_DIR,
+                    $name
+                );
+            }
+        } else {
+            $mainTemplate = $this->configTemplate;
+        }
+
+        return $this->makeFile($extension, $this->processTemplate($mainTemplate));
     }
 
     /**
@@ -636,15 +674,16 @@ class Tester
     private function processTemplate(string $template)
     {
         $vars = [
-            'FILE:LOG:ACC' => ['getFile', 'acc.log'],
-            'FILE:LOG:ERR' => ['getFile', 'err.log'],
-            'FILE:PID' => ['getFile', 'pid'],
+            'FILE:LOG:ACC' => ['getSimpleFile', 'acc.log'],
+            'FILE:LOG:ERR' => ['getSimpleFile', 'err.log'],
+            'FILE:PID' => ['getSimpleFile', 'pid'],
             'ADDR:IPv4' => ['getAddr', 'ipv4'],
             'ADDR:IPv4:ANY' => ['getAddr', 'ipv4-any'],
             'ADDR:IPv6' => ['getAddr', 'ipv6'],
             'ADDR:IPv6:ANY' => ['getAddr', 'ipv6-any'],
             'ADDR:UDS' => ['getAddr', 'uds'],
             'PORT' => ['getPort', 'ip'],
+            'INCLUDE:CONF' => self::CONF_DIR . '/*.conf',
         ];
         $aliases = [
             'ADDR' => 'ADDR:IPv4',
@@ -663,10 +702,13 @@ class Tester
                     return 'INVALID';
                 }
                 $pool = $matches[2] ?? 'default';
-                $varArgs = $vars[$varName];
-                $functionName = array_shift($varArgs);
-                $varArgs[] = $pool;
-                return call_user_func_array([$this, $functionName], $varArgs);
+                $varValue = $vars[$varName];
+                if (is_string($varValue)) {
+                    return $varValue;
+                }
+                $functionName = array_shift($varValue);
+                $varValue[] = $pool;
+                return call_user_func_array([$this, $functionName], $varValue);
             },
             $template
         );
@@ -759,21 +801,36 @@ class Tester
 
     /**
      * @param string $extension
+     * @param string|null $dir
+     * @param string|null $name
      * @return string
      */
-    private function getFile(string $extension)
+    private function getFile(string $extension, $dir = null, $name = null)
     {
-        return $this->fileName . $extension;
+        $fileName = (is_null($name) ? $this->fileName : $name . '.') . $extension;
+
+        return is_null($dir) ? $fileName : $dir . '/'  . $fileName;
+    }
+
+    /**
+     * @param string $extension
+     * @return string
+     */
+    private function getSimpleFile(string $extension)
+    {
+        return $this->getFile($extension);
     }
 
     /**
      * @param string $extension
      * @param string $content
+     * @param string|null $dir
+     * @param string|null $name
      * @return string
      */
-    private function makeFile(string $extension, string $content = '')
+    private function makeFile(string $extension, string $content = '', $dir = null, $name = null)
     {
-        $filePath = $this->getFile($extension);
+        $filePath = $this->getFile($extension, $dir, $name);
         file_put_contents($filePath, $content);
 
         return $filePath;
