@@ -19,6 +19,7 @@ pm.max_children = 5
 pm.start_servers = 1
 pm.min_spare_servers = 1
 pm.max_spare_servers = 3
+catch_workers_output = yes
 EOT;
 
 $code = <<<EOT
@@ -32,6 +33,7 @@ $tester->expectLogStartNotices();
 $tester->request()->expectEmptyBody();
 $tester->terminate();
 $tester->expectFastCGIErrorMessage('e', 1050, 80);
+$tester->expectLogMessage('PHP message: ' . str_repeat('e', 80), 1050);
 $tester->close();
 
 ?>
