@@ -31,7 +31,7 @@ $tester->start();
 $tester->expectLogStartNotices();
 $tester->request()->expectEmptyBody();
 $tester->terminate();
-$tester->expectLogMessage('t', 2048, 4000, false);
+$tester->expectFastCGIErrorMessage('t', 2048, 4000);
 $tester->close();
 
 ?>

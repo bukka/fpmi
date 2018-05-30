@@ -813,6 +813,22 @@ class Tester
     }
 
     /**
+     * Expect message to be written to FastCGI error stream.
+     *
+     * @param string $message
+     * @param int $limit
+     * @param int $repeat
+     */
+    public function expectFastCGIErrorMessage(
+        string $message,
+        int $limit = 1024,
+        int $repeat = 0
+    ) {
+        $this->logTool->setExpectedMessage($message, $limit, $repeat);
+        $this->logTool->checkTruncatedMessage($this->response->getErrorData());
+    }
+
+    /**
      * Expect starting lines to be logged.
      */
     public function expectLogStartNotices()
@@ -834,27 +850,28 @@ class Tester
      * @param string $message
      * @param int $limit
      * @param int $repeat
-     * @param bool $wrapped
      * @param bool $decorated
+     * @param bool $wrapped
      */
     public function expectLogMessage(
         string $message,
         int $limit = 1024,
         int $repeat = 0,
-        bool $wrapped = true,
-        bool $decorated = true
+        bool $decorated = true,
+        bool $wrapped = true
     ) {
         $this->logTool->setExpectedMessage($message, $limit, $repeat);
         if ($wrapped) {
             $logLines = $this->getLogLines(-1, true);
-            if ($this->debug) {
-                $this->message("-------------- LOG LINES: -------------");
-                var_dump($logLines);
-                $this->message("---------------------------------------\n");
-            }
             $this->logTool->checkWrappedMessage($logLines, true, $decorated);
         } else {
-            $this->logTool->checkTruncatedMessage($this->response->getErrorData());
+            $logLines = $this->getLogLines(1, true);
+            $this->logTool->checkTruncatedMessage($logLines[0] ?? '');
+        }
+        if ($this->debug) {
+            $this->message("-------------- LOG LINES: -------------");
+            var_dump($logLines);
+            $this->message("---------------------------------------\n");
         }
     }
 

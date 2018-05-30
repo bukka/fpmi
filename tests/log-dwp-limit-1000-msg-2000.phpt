@@ -33,7 +33,7 @@ $tester->start();
 $tester->expectLogStartNotices();
 $tester->request()->expectEmptyBody();
 $tester->terminate();
-$tester->expectLogMessage('a', 1000, 2000, true, false);
+$tester->expectLogMessage('a', 1000, 2000, false);
 $tester->close();
 
 ?>
