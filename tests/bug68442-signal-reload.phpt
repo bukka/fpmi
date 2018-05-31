@@ -1,7 +1,10 @@
 --TEST--
 FPMI: bug68442 - Signal reload
 --SKIPIF--
-<?php include "skipif.inc"; ?>
+<?php
+include "skipif.inc";
+FPMI\Tester::skipIfTravis("intermittent failure of not emitting 'reloading: .*'")
+?>
 --FILE--
 <?php
 
