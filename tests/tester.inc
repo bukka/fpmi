@@ -936,6 +936,7 @@ class Tester
      * Expect a single log line.
      *
      * @param string $message
+     * @return bool
      */
     public function expectLogLine(string $message)
     {
@@ -946,65 +947,85 @@ class Tester
         if ($this->debug) {
             $this->message("LOG LINE: " . ($logLines[0] ?? ''));
         }
-        $this->logTool->checkWrappedMessage($logLines, false);
+
+        return $this->logTool->checkWrappedMessage($logLines, false);
     }
 
     /**
+     * Expect a log debug message.
+     *
      * @param string $message
      * @param string|null $pool
+     * @return bool
      */
     public function expectLogDebug(string $message, $pool = null)
     {
-        $this->logTool->expectDebug($this->getLastLogLine(), $message, $pool);
+        return $this->logTool->expectDebug($this->getLastLogLine(), $message, $pool);
     }
 
     /**
+     * Expect a log notice.
+     *
      * @param string $message
      * @param string|null $pool
+     * @return bool
      */
     public function expectLogNotice(string $message, $pool = null)
     {
-        $this->logTool->expectNotice($this->getLastLogLine(), $message, $pool);
+        return $this->logTool->expectNotice($this->getLastLogLine(), $message, $pool);
     }
 
     /**
+     * Expect a log warning.
+     *
      * @param string $message
      * @param string|null $pool
+     * @return bool
      */
     public function expectLogWarning(string $message, $pool = null)
     {
-        $this->logTool->expectWarning($this->getLastLogLine(), $message, $pool);
+        return $this->logTool->expectWarning($this->getLastLogLine(), $message, $pool);
     }
 
     /**
+     * Expect a log error.
+     *
      * @param string $message
      * @param string|null $pool
+     * @return bool
      */
     public function expectLogError(string $message, $pool = null)
     {
-        $this->logTool->expectError($this->getLastLogLine(), $message, $pool);
+        return $this->logTool->expectError($this->getLastLogLine(), $message, $pool);
     }
 
     /**
+     * Expect a log alert.
+     *
      * @param string $message
      * @param string|null $pool
+     * @return bool
      */
     public function expectLogAlert(string $message, $pool = null)
     {
-        $this->logTool->expectAlert($this->getLastLogLine(), $message, $pool);
+        return $this->logTool->expectAlert($this->getLastLogLine(), $message, $pool);
     }
 
     /**
-     * Expect no log lines to be logged
+     * Expect no log lines to be logged.
+     *
+     * @return bool
      */
     public function expectNoLogMessages()
     {
         $logLines = $this->getLogLines(-1, true);
         if (!empty($logLines)) {
-            $this->error(
+            return $this->error(
                 "Expected no log lines but following lines logged:\n" . implode("\n", $logLines)
             );
         }
+
+        return true;
     }
 
     /**
