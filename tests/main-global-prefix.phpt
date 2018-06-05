@@ -9,12 +9,12 @@ require_once "tester.inc";
 
 $cfg = <<<EOT
 [global]
-error_log = {{FILE:LOG:ERR}}
-pid = {{FILE:PID}}
+error_log = {{RFILE:LOG:ERR}}
+pid = {{RFILE:PID}}
 [unconfined]
 listen = {{ADDR}}
-access.log = {{FILE:LOG:ACC}}
-slowlog = {{FILE:LOG:SLOW}};
+access.log = {{RFILE:LOG:ACC}}
+slowlog = {{RFILE:LOG:SLOW}}
 request_slowlog_timeout = 1
 ping.path = /ping
 ping.response = pong
@@ -23,21 +23,21 @@ pm.max_children = 5
 pm.start_servers = 2
 pm.min_spare_servers = 1
 pm.max_spare_servers = 3
-catch_workers_output = yes
 EOT;
 
-$tester = new FPMI\Tester($cfg, '', ['prefix' => __DIR__]);
-$tester->start();
+$prefix = __DIR__;
+$tester = new FPMI\Tester($cfg);
+$tester->start('--prefix ' . $prefix);
 $tester->expectLogStartNotices();
-$tester->expectFile(FPMI\Tester::FILE_EXT_LOG_ACC);
-$tester->expectFile(FPMI\Tester::FILE_EXT_LOG_ERR);
-$tester->expectFile(FPMI\Tester::FILE_EXT_LOG_SLOW);
-$tester->expectFile(FPMI\Tester::FILE_EXT_PID);
+$tester->expectFile(FPMI\Tester::FILE_EXT_LOG_ACC, $prefix);
+$tester->expectFile(FPMI\Tester::FILE_EXT_LOG_ERR, $prefix);
+$tester->expectFile(FPMI\Tester::FILE_EXT_LOG_SLOW, $prefix);
+$tester->expectFile(FPMI\Tester::FILE_EXT_PID, $prefix);
 $tester->ping();
 $tester->terminate();
 $tester->expectLogTerminatingNotices();
 $tester->close();
-$tester->expectNoFile(FPMI\Tester::FILE_EXT_PID);
+$tester->expectNoFile(FPMI\Tester::FILE_EXT_PID, $prefix);
 
 ?>
 Done

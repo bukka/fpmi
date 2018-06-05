@@ -330,9 +330,6 @@ class Tester
         $desc = $this->outDesc ? [] : [1 => array('pipe', 'w')];
         $asRoot = getenv('TEST_FPMI_RUN_AS_ROOT') ? '--allow-to-run-as-root' : '';
         $cmd = self::findExecutable() . " $asRoot -F -O -y $configFile $extraArgs";
-        if (isset($this->options['prefix'])) {
-            $cmd .= ' --prefix ' . $this->options['prefix'];
-        }
         /* Since it's not possible to spawn a process under linux without using a
          * shell in php (why?!?) we need a little shell trickery, so that we can
          * actually kill php-fpmi */
@@ -710,10 +707,14 @@ class Tester
     private function processTemplate(string $template)
     {
         $vars = [
-            'FILE:LOG:ACC' => ['getSimpleFile', self::FILE_EXT_LOG_ACC],
-            'FILE:LOG:ERR' => ['getSimpleFile', self::FILE_EXT_LOG_ERR],
-            'FILE:LOG:SLOW' => ['getSimpleFile', self::FILE_EXT_LOG_SLOW],
-            'FILE:PID' => ['getSimpleFile', self::FILE_EXT_PID],
+            'FILE:LOG:ACC' => ['getAbsoluteFile', self::FILE_EXT_LOG_ACC],
+            'FILE:LOG:ERR' => ['getAbsoluteFile', self::FILE_EXT_LOG_ERR],
+            'FILE:LOG:SLOW' => ['getAbsoluteFile', self::FILE_EXT_LOG_SLOW],
+            'FILE:PID' => ['getAbsoluteFile', self::FILE_EXT_PID],
+            'RFILE:LOG:ACC' => ['getRelativeFile', self::FILE_EXT_LOG_ACC],
+            'RFILE:LOG:ERR' => ['getRelativeFile', self::FILE_EXT_LOG_ERR],
+            'RFILE:LOG:SLOW' => ['getRelativeFile', self::FILE_EXT_LOG_SLOW],
+            'RFILE:PID' => ['getRelativeFile', self::FILE_EXT_PID],
             'ADDR:IPv4' => ['getAddr', 'ipv4'],
             'ADDR:IPv4:ANY' => ['getAddr', 'ipv4-any'],
             'ADDR:IPv6' => ['getAddr', 'ipv6'],
@@ -853,25 +854,32 @@ class Tester
      * @param string $extension
      * @return string
      */
-    private function getSimpleFile(string $extension)
+    private function getAbsoluteFile(string $extension)
     {
-        $fileName = rtrim($this->fileName, '.');
-        if (isset($this->options['prefix'])) {
-            $fileName = basename($fileName);
-        }
-
-        return $this->getFile($extension, null, $fileName);
+        return $this->getFile($extension);
     }
 
     /**
      * @param string $extension
      * @return string
      */
-    private function getPrefixedFile(string $extension)
+    private function getRelativeFile(string $extension)
+    {
+        $fileName = rtrim(basename($this->fileName), '.');
+
+        return $this->getFile($extension, null, $fileName);
+    }
+
+    /**
+     * @param string $extension
+     * @param string $prefix
+     * @return string
+     */
+    private function getPrefixedFile(string $extension, string $prefix = null)
     {
         $fileName = rtrim($this->fileName, '.');
-        if (isset($this->options['prefix'])) {
-            $fileName = $this->options['prefix'] . '/' . basename($fileName);
+        if (!is_null($prefix)) {
+            $fileName = $prefix . '/' . basename($fileName);
         }
 
         return $this->getFile($extension, null, $fileName);
@@ -929,11 +937,12 @@ class Tester
      * Expect file with a supplied extension to exist.
      *
      * @param string $extension
+     * @param string $prefix
      * @return bool
      */
-    public function expectFile(string $extension)
+    public function expectFile(string $extension, $prefix = null)
     {
-        $filePath = $this->getPrefixedFile($extension);
+        $filePath = $this->getPrefixedFile($extension, $prefix);
         if (!file_exists($filePath)) {
             return $this->error("The file $filePath does not exist");
         }
@@ -945,11 +954,12 @@ class Tester
      * Expect file with a supplied extension to not exist.
      *
      * @param string $extension
+     * @param string $prefix
      * @return bool
      */
-    public function expectNoFile(string $extension)
+    public function expectNoFile(string $extension, $prefix = null)
     {
-        $filePath = $this->getPrefixedFile($extension);
+        $filePath = $this->getPrefixedFile($extension, $prefix);
         if (file_exists($filePath)) {
             return $this->error("The file $filePath exists");
         }
