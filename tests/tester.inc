@@ -359,6 +359,37 @@ class Tester
     }
 
     /**
+     * Run until needle is found in the log.
+     *
+     * @param string $needle
+     * @param int $max
+     * @return bool
+     * @throws \Exception
+     */
+    public function runTill(string $needle, $max = 10)
+    {
+        $this->start();
+        $found = false;
+        for ($i = 0; $i < $max; $i++) {
+            $line = $this->getLogLine();
+            if (is_null($line)) {
+                break;
+            }
+            if (preg_match($needle, $line) === 1) {
+                $found = true;
+                break;
+            }
+        }
+        $this->close(true);
+
+        if (!$found) {
+            return $this->error("The search pattern not found");
+        }
+
+        return true;
+    }
+
+    /**
      * Check if connection works.
      *
      * @param string $host
@@ -587,6 +618,23 @@ class Tester
     }
 
     /**
+     * Get a single log line
+     *
+     * @return null|string
+     */
+    private function getLogLine()
+    {
+        $read = [$this->outDesc];
+        $write = null;
+        $except = null;
+        if (stream_select($read, $write, $except, 2 )) {
+            return fgets($this->outDesc);
+        } else {
+            return null;
+        }
+    }
+
+    /**
      * Get log lines
      *
      * @param int $number
@@ -597,19 +645,15 @@ class Tester
     public function getLogLines(int $number = 1, bool $skipBlank = false, string $ignore = 'systemd')
     {
         $lines = [];
-        $read = [$this->outDesc];
-        $write = null;
-        $except = null;
         /* Read $n lines or until EOF */
         while ($number > 0 || ($number < 0 && !feof($this->outDesc))) {
-            if (stream_select($read, $write, $except, 2 )) {
-                $line = fgets($this->outDesc);
-                if ((empty($ignore) || !strpos($line, $ignore)) && (!$skipBlank || strlen(trim($line)) > 0)) {
-                    $lines[] = $line;
-                    $number--;
-                }
-            } else {
+            $line = $this->getLogLine();
+            if (is_null($line)) {
                 break;
+            }
+            if ((empty($ignore) || !strpos($line, $ignore)) && (!$skipBlank || strlen(trim($line)) > 0)) {
+                $lines[] = $line;
+                $number--;
             }
         }
 
