@@ -22,7 +22,7 @@ class Status
     private $defaultFields = [
         'pool'                 => '\w+',
         'process manager'      => '(static|dynamic|ondemand)',
-        'start time'           => '\d+\/\w{3}\/\d{4}:\d{2}:\d{2}:\d{2}\s\+\d{4}',
+        'start time'           => '\d+\/\w{3}\/\d{4}:\d{2}:\d{2}:\d{2}\s[+-]\d{4}',
         'start since'          => '\d+',
         'accepted conn'        => '\d+',
         'listen queue'         => '\d+',
