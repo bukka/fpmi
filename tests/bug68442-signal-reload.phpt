@@ -1,10 +1,7 @@
 --TEST--
 FPMI: bug68442 - Signal reload
 --SKIPIF--
-<?php
-include "skipif.inc";
-FPMI\Tester::skipIfTravis("intermittent failure of not emitting 'reloading: .*'")
-?>
+<?php include "skipif.inc"; ?>
 --FILE--
 <?php
 
@@ -28,6 +25,7 @@ EOT;
 $tester = new FPMI\Tester($cfg);
 $tester->start();
 $tester->expectLogStartNotices();
+$tester->ping('{{ADDR}}');
 $tester->signal('USR2');
 $tester->expectLogNotice('Reloading in progress ...');
 $tester->expectLogNotice('reloading: .*');
