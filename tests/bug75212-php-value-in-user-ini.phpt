@@ -1,5 +1,5 @@
 --TEST--
-FPMI: bug72212 - php_value acts like php_admin_value
+FPMI: bug75212 - php_value acts like php_admin_value
 --SKIPIF--
 <?php include "skipif.inc"; ?>
 --FILE--
