@@ -10,8 +10,6 @@ require_once "tester.inc";
 $cfg = <<<EOT
 [global]
 error_log = {{FILE:LOG}}
-log_limit = 1024
-log_buffering = yes
 [unconfined]
 listen = {{ADDR:UDS}}
 ping.path = /ping
