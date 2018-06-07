@@ -1,15 +1,15 @@
 language: c
+dist: trusty
+sudo: false
 
 env:
   - PHP="PHP-7.1"
   - PHP="PHP-7.2"
   - PHP="master"
 
-before_install:
-  - echo '{"ipv6":true,"fixed-cidr-v6":"2001:db8:1::/64"}' | sudo tee /etc/docker/daemon.json
-  - sudo service docker restart
-
-before_script: ./travis/ci.sh
+before_script:
+  - sudo sh -c 'echo 0 > /proc/sys/net/ipv6/conf/all/disable_ipv6'
+  - ./travis/ci.sh
 
 branches:
   only:
