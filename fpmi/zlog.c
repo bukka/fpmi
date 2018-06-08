@@ -314,7 +314,6 @@ inline static zlog_bool zlog_stream_buf_alloc(struct zlog_stream *stream)  /* {{
 }
 /* }}} */
 
-/* TODO: consider better handling of errors and do not use zend_quiet_write */
 static inline ssize_t zlog_stream_direct_write_ex(
 		struct zlog_stream *stream, const char *buf, size_t len,
 		const char *append, size_t append_len) /* {{{ */
@@ -460,7 +459,6 @@ static ssize_t zlog_stream_buf_flush(struct zlog_stream *stream) /* {{{ */
 }
 /* }}} */
 
-/* TODO: handle errors from this function in all calls (check for -1) */
 static ssize_t zlog_stream_buf_append(
 		struct zlog_stream *stream, const char *str, size_t str_len)  /* {{{ */
 {
