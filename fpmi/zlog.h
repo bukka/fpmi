@@ -58,6 +58,11 @@ enum {
 
 /* STREAM */
 
+struct zlog_stream_buffer {
+	char *data;
+	size_t size;
+};
+
 struct zlog_stream {
 	int flags;
 	unsigned int use_syslog:1;
@@ -70,13 +75,13 @@ struct zlog_stream {
 	unsigned int wrap:1;
 	unsigned int msg_quote:1;
 	unsigned int decorate:1;
+	unsigned int shared_buffer:1;
 	int fd;
 	int line;
 	const char *function;
+	struct zlog_stream_buffer buf;
 	size_t len;
-	size_t buf_size;
 	size_t buf_init_size;
-	char *buf;
 	size_t prefix_len;
 	char *msg_prefix;
 	size_t msg_prefix_len;
