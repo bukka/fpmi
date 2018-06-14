@@ -551,7 +551,7 @@ static inline void zlog_stream_init_internal(
 	stream->prefix_buffer = (flags & ZLOG_LEVEL_MASK) >= zlog_level &&
 			(stream->use_fd || stream->use_syslog);
 	stream->fd = fd > -1 ? fd : STDERR_FILENO;
-	stream->shared_buffer = external_logger != NULL;
+	stream->shared_buffer = external_logger == NULL;
 }
 /* }}} */
 
