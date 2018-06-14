@@ -1621,7 +1621,6 @@ static void fpmi_conf_dump() /* {{{ */
 	zlog(ZLOG_NOTICE, "\tlog_buffering = %s",               BOOL2STR(fpmi_global_config.log_buffering));
 	zlog(ZLOG_NOTICE, "\tlog_level = %s",                   zlog_get_level_name(fpmi_globals.log_level));
 	zlog(ZLOG_NOTICE, "\tlog_limit = %d",                   fpmi_global_config.log_limit);
-	zlog(ZLOG_NOTICE, "\tworkers_output_limit = %d",        fpmi_globals.workers_output_limit);
 	zlog(ZLOG_NOTICE, "\temergency_restart_interval = %ds", fpmi_global_config.emergency_restart_interval);
 	zlog(ZLOG_NOTICE, "\temergency_restart_threshold = %d", fpmi_global_config.emergency_restart_threshold);
 	zlog(ZLOG_NOTICE, "\tprocess_control_timeout = %ds",    fpmi_global_config.process_control_timeout);
