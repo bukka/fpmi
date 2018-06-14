@@ -136,6 +136,7 @@ static struct ini_value_parser_s ini_fpmi_pool_options[] = {
 	{ "listen.mode",               &fpmi_conf_set_string,      WPO(listen_mode) },
 	{ "listen.allowed_clients",    &fpmi_conf_set_string,      WPO(listen_allowed_clients) },
 	{ "process.priority",          &fpmi_conf_set_integer,     WPO(process_priority) },
+	{ "process.dumpable",          &fpmi_conf_set_boolean,     WPO(process_dumpable) },
 	{ "pm",                        &fpmi_conf_set_pm,          WPO(pm) },
 	{ "pm.max_children",           &fpmi_conf_set_integer,     WPO(pm_max_children) },
 	{ "pm.start_servers",          &fpmi_conf_set_integer,     WPO(pm_start_servers) },
@@ -619,6 +620,7 @@ static void *fpmi_worker_pool_config_alloc() /* {{{ */
 	wp->config->listen_backlog = FPMI_BACKLOG_DEFAULT;
 	wp->config->pm_process_idle_timeout = 10; /* 10s by default */
 	wp->config->process_priority = 64; /* 64 means unset */
+	wp->config->process_dumpable = 0;
 	wp->config->clear_env = 1;
 	wp->config->decorate_workers_output = 1;
 
@@ -1661,6 +1663,7 @@ static void fpmi_conf_dump() /* {{{ */
 		} else {
 			zlog(ZLOG_NOTICE, "\tprocess.priority = %d", wp->config->process_priority);
 		}
+		zlog(ZLOG_NOTICE, "\tprocess.dumpable = %s",           BOOL2STR(wp->config->process_dumpable));
 		zlog(ZLOG_NOTICE, "\tpm = %s",                         PM2STR(wp->config->pm));
 		zlog(ZLOG_NOTICE, "\tpm.max_children = %d",            wp->config->pm_max_children);
 		zlog(ZLOG_NOTICE, "\tpm.start_servers = %d",           wp->config->pm_start_servers);
