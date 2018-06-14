@@ -129,6 +129,16 @@ int zlog_set_buffering(zlog_bool buffering) /* {{{ */
 }
 /* }}} */
 
+void zlog_cleanup() /* {{{ */
+{
+	if (zlog_buffer.data) {
+		free(zlog_buffer.data);
+		zlog_buffer.data = NULL;
+		zlog_buffer.size = 0;
+	}
+}
+/* }}} */
+
 static inline size_t zlog_truncate_buf(char *buf, size_t buf_size, size_t space_left) /* {{{ */
 {
 	memcpy(buf + buf_size - sizeof("...") + 1 - space_left, "...", sizeof("...") - 1);
@@ -833,7 +843,7 @@ zlog_bool zlog_stream_finish(struct zlog_stream *stream) /* {{{ */
 
 void zlog_stream_destroy(struct zlog_stream *stream) /* {{{ */
 {
-	if (stream->buf.data != NULL) {
+	if (!stream->shared_buffer && stream->buf.data != NULL) {
 		free(stream->buf.data);
 	}
 	if (stream->msg_prefix != NULL) {
