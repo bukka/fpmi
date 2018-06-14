@@ -334,6 +334,10 @@ static zlog_bool zlog_stream_buf_alloc_ex(struct zlog_stream *stream, size_t nee
 
 inline static zlog_bool zlog_stream_buf_alloc(struct zlog_stream *stream)  /* {{{ */
 {
+	/* if there is enough space in the buffer, we do not need to reallocate */
+	if (stream->buf.data && stream->buf.size >= MIN(zlog_limit, stream->buf_init_size)) {
+		return 1;
+	}
 	return zlog_stream_buf_alloc_ex(stream, 0);
 }
 /* }}} */
