@@ -284,7 +284,7 @@ void zlog_msg_ex(const char *function, int line, int flags,
 	size_t prefix_len = strlen(prefix);
 	size_t msg_len = strlen(msg);
 
-	zlog_stream_init_internal(&stream, ZLOG_NOTICE, msg_len + prefix_len, 0);
+	zlog_stream_init_internal(&stream, flags, msg_len + prefix_len, 0);
 	zlog_stream_prefix_ex(&stream, function, line);
 	zlog_stream_str(&stream, prefix, prefix_len);
 	zlog_stream_str(&stream, msg, msg_len);
@@ -475,11 +475,11 @@ static ssize_t zlog_stream_buf_flush(struct zlog_stream *stream) /* {{{ */
 	}
 #endif
 
-	zlog_stream_buf_copy_char(stream, '\n');
 	if (external_logger != NULL) {
 		external_logger(stream->flags & ZLOG_LEVEL_MASK,
 				stream->buf.data + stream->prefix_len, stream->len - stream->prefix_len);
 	}
+	zlog_stream_buf_copy_char(stream, '\n');
 	written = zlog_stream_direct_write(stream, stream->buf.data, stream->len);
 	stream->len = 0;
 
@@ -553,7 +553,7 @@ static inline void zlog_stream_init_internal(
 				(flags & ZLOG_LEVEL_MASK) >= ZLOG_NOTICE
 			);
 	stream->prefix_buffer = (flags & ZLOG_LEVEL_MASK) >= zlog_level &&
-			(stream->use_fd || stream->use_syslog);
+			(stream->use_fd || stream->use_stderr || stream->use_syslog);
 	stream->fd = fd > -1 ? fd : STDERR_FILENO;
 	stream->shared_buffer = external_logger == NULL;
 }
@@ -579,6 +579,7 @@ void zlog_stream_set_decorating(struct zlog_stream *stream, zlog_bool decorate) 
 	} else {
 		stream->decorate = 0;
 		stream->msg_quote = 0;
+		stream->prefix_buffer = 0;
 	}
 }
 /* }}} */
@@ -669,7 +670,7 @@ ssize_t zlog_stream_prefix_ex(struct zlog_stream *stream, const char *function, 
 {
 	size_t len;
 
-	if (!stream->prefix_buffer || !stream->decorate) {
+	if (!stream->prefix_buffer) {
 		return 0;
 	}
 	if (stream->wrap && stream->function == NULL) {

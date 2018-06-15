@@ -33,7 +33,7 @@ $tester->expectLogStartNotices();
 $tester->request()->expectEmptyBody();
 $tester->terminate();
 $tester->expectFastCGIErrorMessage('e', 1050, 80);
-$tester->expectLogMessage('PHP message: ' . str_repeat('e', 80), 1050);
+$tester->expectLogMessage('NOTICE: PHP message: ' . str_repeat('e', 80), 1050);
 $tester->close();
 
 ?>
