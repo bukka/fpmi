@@ -58,7 +58,6 @@ class LogTool
     /**
      * @param string $level
      * @return int
-     * @todo should be probably part of the message check methods
      */
     public function setExpectedLevel(string $level)
     {
