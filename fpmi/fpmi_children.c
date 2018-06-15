@@ -146,6 +146,7 @@ static struct fpmi_child_s *fpmi_child_find(pid_t pid) /* {{{ */
 static void fpmi_child_init(struct fpmi_worker_pool_s *wp) /* {{{ */
 {
 	fpmi_globals.max_requests = wp->config->pm_max_requests;
+	fpmi_globals.listening_socket = dup(wp->listening_socket);
 
 	if (0 > fpmi_stdio_init_child(wp)  ||
 	    0 > fpmi_log_init_child(wp)    ||
