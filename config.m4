@@ -1,6 +1,4 @@
-dnl
-dnl $Id$
-dnl
+dnl fpmi config
 
 PHP_ARG_ENABLE(fpmi,,
 [  --enable-fpmi            Enable building of the fpmi SAPI executable], no, no)

@@ -16,8 +16,6 @@
    +----------------------------------------------------------------------+
 */
 
-/* $Id$ */
-
 #ifndef FPMI_EVENTS_KQUEUE_H
 #define FPMI_EVENTS_KQUEUE_H
 

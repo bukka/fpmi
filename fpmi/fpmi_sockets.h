@@ -1,5 +1,4 @@
 
-	/* $Id: fpmi_sockets.h,v 1.12 2008/08/26 15:09:15 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
 #ifndef FPMI_MISC_H

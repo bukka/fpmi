@@ -1,5 +1,4 @@
 
-	/* $Id: fpmi_php.c,v 1.22.2.4 2008/12/13 03:21:18 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
 #include "fpmi_config.h"

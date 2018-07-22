@@ -1,5 +1,4 @@
 
-	/* $Id: fpmi_status.h 312263 2011-06-18 17:46:16Z felipe $ */
 	/* (c) 2009 Jerome Loyet */
 
 #ifndef FPMI_LOG_H

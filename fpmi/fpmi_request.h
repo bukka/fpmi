@@ -1,5 +1,4 @@
 
-	/* $Id: fpmi_request.h,v 1.4 2008/07/20 01:47:16 anight Exp $ */
 	/* (c) 2007,2008 Andrei Nigmatulin */
 
 #ifndef FPMI_REQUEST_H

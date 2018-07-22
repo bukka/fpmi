@@ -1,5 +1,4 @@
 
-	/* $Id$ */
 	/* (c) 2009 Jerome Loyet */
 
 #ifndef FPMI_STATUS_H
