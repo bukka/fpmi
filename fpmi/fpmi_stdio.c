@@ -296,8 +296,11 @@ int fpmi_stdio_open_error_log(int reopen) /* {{{ */
 	int fd;
 
 #ifdef HAVE_SYSLOG_H
+#if PHP_VERSION_ID < 70299
+#define php_openlog openlog
+#endif
 	if (!strcasecmp(fpmi_global_config.error_log, "syslog")) {
-		openlog(fpmi_global_config.syslog_ident, LOG_PID | LOG_CONS, fpmi_global_config.syslog_facility);
+		php_openlog(fpmi_global_config.syslog_ident, LOG_PID | LOG_CONS, fpmi_global_config.syslog_facility);
 		fpmi_globals.error_log_fd = ZLOG_SYSLOG;
 		if (fpmi_use_error_log()) {
 			zlog_set_fd(fpmi_globals.error_log_fd);
