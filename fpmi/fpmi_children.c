@@ -57,6 +57,10 @@ static struct fpmi_child_s *fpmi_child_alloc() /* {{{ */
 
 static void fpmi_child_free(struct fpmi_child_s *child) /* {{{ */
 {
+	if (child->log_stream) {
+		zlog_stream_close(child->log_stream);
+		free(child->log_stream);
+	}
 	free(child);
 }
 /* }}} */

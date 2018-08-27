@@ -9,6 +9,7 @@
 int fpmi_stdio_init_main();
 int fpmi_stdio_init_final();
 int fpmi_stdio_init_child(struct fpmi_worker_pool_s *wp);
+int fpmi_stdio_flush_child();
 int fpmi_stdio_prepare_pipes(struct fpmi_child_s *child);
 void fpmi_stdio_child_use_pipes(struct fpmi_child_s *child);
 int fpmi_stdio_parent_use_pipes(struct fpmi_child_s *child);

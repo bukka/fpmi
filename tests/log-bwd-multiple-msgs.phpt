@@ -33,7 +33,9 @@ $tester = new FPMI\Tester($cfg, $code);
 $tester->start();
 $tester->expectLogStartNotices();
 $tester->request()->expectEmptyBody();
+$tester->request()->expectEmptyBody();
 $tester->terminate();
+$tester->expectLogLine('msg 1 - msg 2 - msg 3');
 $tester->expectLogLine('msg 1 - msg 2 - msg 3');
 $tester->close();
 

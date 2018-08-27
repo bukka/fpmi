@@ -17,6 +17,7 @@
 #include "fpmi_children.h"
 #include "fpmi_scoreboard.h"
 #include "fpmi_status.h"
+#include "fpmi_stdio.h"
 #include "fpmi_request.h"
 #include "fpmi_log.h"
 
@@ -200,6 +201,7 @@ void fpmi_request_end(void) /* {{{ */
 #endif
 	proc->memory = memory;
 	fpmi_scoreboard_proc_release(proc);
+	fpmi_stdio_flush_child();
 }
 /* }}} */
 

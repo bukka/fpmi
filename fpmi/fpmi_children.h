@@ -9,6 +9,7 @@
 
 #include "fpmi_worker_pool.h"
 #include "fpmi_events.h"
+#include "zlog.h"
 
 int fpmi_children_create_initial(struct fpmi_worker_pool_s *wp);
 int fpmi_children_free(struct fpmi_child_s *child);
@@ -30,6 +31,7 @@ struct fpmi_child_s {
 	int idle_kill;
 	pid_t pid;
 	int scoreboard_i;
+	struct zlog_stream *log_stream;
 };
 
 #endif
