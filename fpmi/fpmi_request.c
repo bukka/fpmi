@@ -25,7 +25,7 @@
 static const char *requests_stages[] = {
 	[FPMI_REQUEST_ACCEPTING]       = "Idle",
 	[FPMI_REQUEST_READING_HEADERS] = "Reading headers",
-	[FPMI_REQUEST_INFO]            = "Getting request informations",
+	[FPMI_REQUEST_INFO]            = "Getting request information",
 	[FPMI_REQUEST_EXECUTING]       = "Running",
 	[FPMI_REQUEST_END]             = "Ending",
 	[FPMI_REQUEST_FINISHED]        = "Finishing",

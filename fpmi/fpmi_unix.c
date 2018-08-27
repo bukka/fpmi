@@ -535,7 +535,7 @@ int fpmi_unix_init_main() /* {{{ */
 						exit(FPMI_EXIT_SOFTWARE);
 					} else {
 						if (readval == 1) {
-							zlog(ZLOG_DEBUG, "I received a valid acknoledge from the master process, I can exit without error");
+							zlog(ZLOG_DEBUG, "I received a valid acknowledge from the master process, I can exit without error");
 							fpmi_cleanups_run(FPMI_CLEANUP_PARENT_EXIT);
 							exit(FPMI_EXIT_OK);
 						} else {

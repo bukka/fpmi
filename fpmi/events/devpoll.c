@@ -166,7 +166,7 @@ static int fpmi_event_devpoll_wait(struct fpmi_event_queue_s *queue, unsigned lo
 		}
 	}
 
-	/* iterate throught triggered events */
+	/* iterate through triggered events */
 	for (i = 0; i < ret; i++) {
 
 		/* find the corresponding event */
@@ -200,7 +200,7 @@ static int fpmi_event_devpoll_add(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct pollfd pollfd;
 
-	/* fill pollfd with event informations */
+	/* fill pollfd with event information */
 	pollfd.fd = ev->fd;
 	pollfd.events = POLLIN;
 	pollfd.revents = 0;
@@ -225,7 +225,7 @@ static int fpmi_event_devpoll_remove(struct fpmi_event_s *ev) /* {{{ */
 {
 	struct pollfd pollfd;
 
-	/* fill pollfd with the same informations as fpmi_event_devpoll_add */
+	/* fill pollfd with the same information as fpmi_event_devpoll_add */
 	pollfd.fd = ev->fd;
 	pollfd.events = POLLIN | POLLREMOVE;
 	pollfd.revents = 0;
