@@ -23,21 +23,12 @@
 static int fd_stdout[2];
 static int fd_stderr[2];
 
-static void fpmi_stdio_cleanup(int which, void *arg) /* {{{ */
-{
-	zlog_cleanup();
-}
-/* }}} */
-
 int fpmi_stdio_init_main() /* {{{ */
 {
 	int fd = open("/dev/null", O_RDWR);
 
 	if (0 > fd) {
 		zlog(ZLOG_SYSERROR, "failed to init stdio: open(\"/dev/null\")");
-		return -1;
-	}
-	if (0 > fpmi_cleanup_add(FPMI_CLEANUP_PARENT, fpmi_stdio_cleanup, 0)) {
 		return -1;
 	}
 
