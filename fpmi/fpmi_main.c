@@ -1520,9 +1520,16 @@ static PHP_MINFO_FUNCTION(cgi)
 }
 /* }}} */
 
+ZEND_BEGIN_ARG_INFO(cgi_fcgi_sapi_no_arginfo, 0)
+ZEND_END_ARG_INFO()
+
 PHP_FUNCTION(fastcgi_finish_request) /* {{{ */
 {
 	fcgi_request *request = (fcgi_request*) SG(server_context);
+
+	if (zend_parse_parameters_none() == FAILURE) {
+		return;
+	}
 
 	if (!fcgi_is_closed(request)) {
 		php_output_end_all();
@@ -1539,7 +1546,7 @@ PHP_FUNCTION(fastcgi_finish_request) /* {{{ */
 /* }}} */
 
 static const zend_function_entry cgi_fcgi_sapi_functions[] = {
-	PHP_FE(fastcgi_finish_request,              NULL)
+	PHP_FE(fastcgi_finish_request,              cgi_fcgi_sapi_no_arginfo)
 	PHP_FE_END
 };
 
