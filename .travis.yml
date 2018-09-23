@@ -5,6 +5,7 @@ sudo: false
 env:
   - PHP="PHP-7.1"
   - PHP="PHP-7.2"
+  - PHP="PHP-7.3"
   - PHP="master"
 
 before_script:
