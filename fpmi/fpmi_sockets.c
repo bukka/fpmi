@@ -403,7 +403,7 @@ int fpmi_sockets_init_main() /* {{{ */
 			return -1;
 		}
 
-	if (wp->listen_address_domain == FPMI_AF_INET && fpmi_socket_get_listening_queue(wp->listening_socket, NULL, &lq_len) >= 0) {
+		if (wp->listen_address_domain == FPMI_AF_INET && fpmi_socket_get_listening_queue(wp->listening_socket, NULL, &lq_len) >= 0) {
 			fpmi_scoreboard_update(-1, -1, -1, (int)lq_len, -1, -1, 0, FPMI_SCOREBOARD_ACTION_SET, wp->scoreboard);
 		}
 	}

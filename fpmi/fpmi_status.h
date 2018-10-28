@@ -28,6 +28,7 @@ void fpmi_status_set_pm(struct fpmi_shm_s *shm, int pm);
 void fpmi_status_update_max_children_reached(struct fpmi_shm_s *shm, unsigned int max_children_reached);
 void fpmi_status_increment_max_children_reached(struct fpmi_shm_s *shm);
 int fpmi_status_handle_request(void);
+int fpmi_status_export_to_zval(zval *status);
 
 extern struct fpmi_shm_s *fpmi_status_shm;
 
