@@ -123,7 +123,7 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	struct fpmi_event_s *event;
 	int fifo_in = 1, fifo_out = 1;
 	int in_buf = 0;
-	int read_fail = 0, finish_log_stream = 0;
+	int read_fail = 0, finish_log_stream = 0, create_log_stream;
 	int res;
 	struct zlog_stream *log_stream;
 
@@ -139,7 +139,8 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 		event = &child->ev_stderr;
 	}
 
-	if (!child->log_stream) {
+	create_log_stream = !child->log_stream;
+	if (create_log_stream) {
 		log_stream = child->log_stream = malloc(sizeof(struct zlog_stream));
 		zlog_stream_init_ex(log_stream, ZLOG_WARNING, STDERR_FILENO);
 		zlog_stream_set_decorating(log_stream, child->wp->config->decorate_workers_output);
@@ -197,8 +198,10 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	}
 
 	if (read_fail) {
-		zlog_stream_set_msg_suffix(log_stream, NULL, ", pipe is closed");
-		zlog_stream_finish(log_stream);
+		if (create_log_stream) {
+			zlog_stream_set_msg_suffix(log_stream, NULL, ", pipe is closed");
+			zlog_stream_finish(log_stream);
+		}
 		if (read_fail < 0) {
 			zlog(ZLOG_SYSERROR, "unable to read what child say");
 		}
