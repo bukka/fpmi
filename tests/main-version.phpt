@@ -15,7 +15,7 @@ echo "Done\n";
 ?>
 --EXPECTF--
 string(%d) "PHP %s (fpmi%s (built: %s
-Copyright (c) 1997-20%s The PHP Group
+Copyright (c) The PHP Group
 Zend Engine v%s, %s
 "
 Done
