@@ -6,6 +6,7 @@ env:
   - PHP="PHP-7.1"
   - PHP="PHP-7.2"
   - PHP="PHP-7.3"
+  - PHP="PHP-7.4"
   - PHP="master"
 
 before_script:
