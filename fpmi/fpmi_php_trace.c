@@ -143,7 +143,7 @@ static int fpmi_php_trace_dump(struct fpmi_child_s *child, FILE *slowlog) /* {{{
 			}
 
 			type = (zend_uchar *)&l;
-			if (0 > fpmi_trace_get_long(function + offsetof(zend_function, type), &l)) { 
+			if (0 > fpmi_trace_get_long(function + offsetof(zend_function, type), &l)) {
 				return -1;
 			}
 
@@ -173,7 +173,7 @@ static int fpmi_php_trace_dump(struct fpmi_child_s *child, FILE *slowlog) /* {{{
 					lineno = *lu;
 				}
 				break;
-			} 
+			}
 
 			if (0 > fpmi_trace_get_long(prev + offsetof(zend_execute_data, prev_execute_data), &l)) {
 				return -1;

@@ -246,7 +246,7 @@ void fpmi_scoreboard_free(struct fpmi_scoreboard_s *scoreboard) /* {{{ */
 
 	scoreboard_size        = sizeof(struct fpmi_scoreboard_s) + (scoreboard->nprocs) * sizeof(struct fpmi_scoreboard_proc_s *);
 	scoreboard_nprocs_size = sizeof(struct fpmi_scoreboard_proc_s) * scoreboard->nprocs;
-	
+
 	fpmi_shm_free(scoreboard, scoreboard_size + scoreboard_nprocs_size);
 }
 /* }}} */

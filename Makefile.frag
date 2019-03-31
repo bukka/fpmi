@@ -18,7 +18,7 @@ install-fpmi: $(SAPI_FPMI_PATH)
 		$(INSTALL_DATA) sapi/fpmi/php-fpmi.conf $(INSTALL_ROOT)$(sysconfdir)/php-fpmi.conf.default; \
 		$(INSTALL_DATA) sapi/fpmi/www.conf $(INSTALL_ROOT)$(sysconfdir)/php-fpmi.d/www.conf.default; \
 	fi
-	
+
 	@echo "Installing PHP FPMi man page:      $(INSTALL_ROOT)$(mandir)/man8/"
 	@$(mkinstalldirs) $(INSTALL_ROOT)$(mandir)/man8
 	@$(INSTALL_DATA) sapi/fpmi/php-fpmi.8 $(INSTALL_ROOT)$(mandir)/man8/php-fpmi$(program_suffix).8
