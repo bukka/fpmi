@@ -23,9 +23,9 @@ struct fpmi_child_s {
 	struct fpmi_child_s *prev, *next;
 	struct timeval started;
 	struct fpmi_worker_pool_s *wp;
-	struct fpmi_event_s ev_stdout, ev_stderr;
+	struct fpmi_event_s ev_stdout, ev_stderr, ev_ioctrl;
 	int shm_slot_i;
-	int fd_stdout, fd_stderr;
+	int fd_stdout, fd_stderr, fd_ioctrl;
 	void (*tracer)(struct fpmi_child_s *);
 	struct timeval slow_logged;
 	int idle_kill;
