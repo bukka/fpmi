@@ -38,6 +38,17 @@
 #define PTR_FMT "016"
 #endif
 
+#if PHP_VERSION_ID < 70399
+#define FPMI_CALL_IS_TOP_CODE(_call_info) \
+	(ZEND_CALL_KIND_EX((*_call_info) >> ZEND_CALL_INFO_SHIFT) == ZEND_CALL_TOP_CODE)
+#define FPMI_CALL_IS_NESTED_CODE(_call_info) \
+	(ZEND_CALL_KIND_EX(*(_call_info) >> ZEND_CALL_INFO_SHIFT) == ZEND_CALL_NESTED_CODE)
+#else
+#define FPMI_CALL_IS_TOP_CODE(_call_info) \
+	(ZEND_CALL_KIND_EX(*_call_info) == ZEND_CALL_TOP_CODE)
+#define FPMI_CALL_IS_NESTED_CODE(_call_info) \
+	(ZEND_CALL_KIND_EX(*_call_info) == ZEND_CALL_NESTED_CODE)
+#endif
 
 static int fpmi_php_trace_dump(struct fpmi_child_s *child, FILE *slowlog) /* {{{ */
 {
@@ -100,9 +111,9 @@ static int fpmi_php_trace_dump(struct fpmi_child_s *child, FILE *slowlog) /* {{{
 					return -1;
 				}
 
-				if (ZEND_CALL_KIND_EX((*call_info) >> ZEND_CALL_INFO_SHIFT) == ZEND_CALL_TOP_CODE) {
+				if (FPMI_CALL_IS_TOP_CODE(call_info)) {
 					return 0;
-				} else if (ZEND_CALL_KIND_EX(*(call_info) >> ZEND_CALL_INFO_SHIFT) == ZEND_CALL_NESTED_CODE) {
+				} else if (FPMI_CALL_IS_NESTED_CODE(call_info)) {
 					memcpy(buf, "[INCLUDE_OR_EVAL]", sizeof("[INCLUDE_OR_EVAL]"));
 				} else {
 					ZEND_ASSERT(0);
