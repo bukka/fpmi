@@ -45,6 +45,7 @@ class Tester
         self::FILE_EXT_PID,
         'src.php',
         'ini',
+        'script.ini',
         'skip.ini',
         '*.sock',
     ];
@@ -119,6 +120,11 @@ class Tester
      * @var Response
      */
     private $response;
+
+    /**
+     * Custom script ini
+     */
+    private $scriptIni;
 
     /**
      * Clean all the created files up
@@ -291,6 +297,18 @@ class Tester
     }
 
     /**
+     * Get option.
+     *
+     * @param string $name
+     * @param mixed $defaultValue
+     * @return mixed|null
+     */
+    private function getOption($name, $defaultValue = null)
+    {
+        return $this->options[$name] ?? $defaultValue;
+    }
+
+    /**
      * @param string $ini
      */
     public function setUserIni(string $ini)
@@ -300,6 +318,15 @@ class Tester
     }
 
     /**
+     * @param string $ini
+     */
+    public function setIni(string $ini)
+    {
+        $this->scriptIni = $ini;
+        $this->makeFile('script.ini', $ini);
+    }
+
+        /**
      * Test configuration file.
      *
      * @return null|string
@@ -330,6 +357,12 @@ class Tester
         $desc = $this->outDesc ? [] : [1 => array('pipe', 'w')];
         $asRoot = getenv('TEST_FPMI_RUN_AS_ROOT') ? '--allow-to-run-as-root' : '';
         $cmd = self::findExecutable() . " $asRoot -F -O -y $configFile $extraArgs";
+        if ($this->scriptIni || $this->getOption('opcache')) {
+            if ($this->getOption('opcache')) {
+                $this->setIni("zend_extension=opcache.so\n[opcache]\nopcache_enable=1");
+            }
+            $cmd .= ' -c ' . $this->getFile('script.ini');
+        }
         /* Since it's not possible to spawn a process under linux without using a
          * shell in php (why?!?) we need a little shell trickery, so that we can
          * actually kill php-fpmi */
