@@ -20,13 +20,6 @@ pm.min_spare_servers = 1
 pm.max_spare_servers = 1
 EOT;
 
-// TODO skip if opcache is not compiled
-// TODO obtain build dir somehow
-$cwd = getcwd();
-$ini = <<<EOT
-zend_extension = $cwd/build-fpm/modules/opcache.so
-EOT;
-
 $code = <<<EOT
 <?php
 \$variable = 'test';
@@ -35,19 +28,13 @@ if (!empty(\$variable)) {
 }
 EOT;
 
-// TODO It seems that tester.inc does not allow custom php.ini even though file can be created
-$iniFile = __DIR__ . '/.user.ini';
-putenv("PHPRC=$iniFile");
-putenv("PHP_INI_SCAN_DIR=/dev/null");
-$tester = new FPMI\Tester($cfg, $code);
-$tester->setUserIni($ini);
+$tester = new FPMI\Tester($cfg, $code, ['opcache' => true]);
 $tester->start();
 $tester->expectLogStartNotices();
 $body = $tester->request()->getBody();
 $expectedBody = "/^<br \\/>\n<b>Fatal error<\\/b>:  'break' not in the 'loop' or 'switch' context in <b>.*\.php<\\/b> on line <b>4<\\/b><br \\/>$/";
 if (!preg_match($expectedBody, $body)) {
   echo 'ERROR: expected body ' . $expectedBody . "\n" . 'does not match actual body: ' . $body . "\n";
-  false;
 }
 // Alternatively error may be suppressed in response and directed to log.
 // $tester->expectLogWarning('child \d+ said into stderr: "NOTICE: PHP message: PHP Fatal error:  \'break\' not in the \'loop\' or \'switch\' context in .* on line 4"', 'unconfined');
