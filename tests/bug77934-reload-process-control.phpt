@@ -14,6 +14,8 @@ pid = {{FILE:PID}}
 process_control_timeout=20
 [unconfined]
 listen = {{ADDR}}
+ping.path = /ping
+ping.response = pong
 pm = dynamic
 pm.max_children = 5
 pm.start_servers = 1
