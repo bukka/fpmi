@@ -6,3 +6,4 @@ cd ../
 ./buildconf --force
 ./configure --disable-all --enable-opcache --enable-fpmi
 make
+sudo make install
