@@ -13,7 +13,9 @@ error_log = {{FILE:LOG}}
 pid = {{FILE:PID}}
 [unconfined]
 listen = {{ADDR}}
-pm = ondemand
+ping.path = /ping
+ping.response = pong
+pm = dynamic
 pm.max_children = 5
 pm.start_servers = 1
 pm.min_spare_servers = 1
@@ -36,13 +38,12 @@ $expectedBody = "/^<br \\/>\n<b>Fatal error<\\/b>:  'break' not in the 'loop' or
 if (!preg_match($expectedBody, $body)) {
   echo 'ERROR: expected body ' . $expectedBody . "\n" . 'does not match actual body: ' . $body . "\n";
 }
-// Alternatively error may be suppressed in response and directed to log.
-// $tester->expectLogWarning('child \d+ said into stderr: "NOTICE: PHP message: PHP Fatal error:  \'break\' not in the \'loop\' or \'switch\' context in .* on line 4"', 'unconfined');
 $tester->signal('USR2');
 $tester->expectLogNotice('Reloading in progress ...');
 $tester->expectLogNotice('reloading: .*');
 $tester->expectLogNotice('using inherited socket fd=\d+, "127.0.0.1:\d+"');
 $tester->expectLogStartNotices();
+$tester->ping('{{ADDR}}');
 $tester->terminate();
 $tester->expectLogTerminatingNotices();
 $tester->close();
