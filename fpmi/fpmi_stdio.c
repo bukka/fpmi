@@ -123,10 +123,8 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	struct fpmi_child_s *child;
 	int is_stdout;
 	struct fpmi_event_s *event;
-	int fifo_in = 1, fifo_out = 1;
-	int in_buf = 0;
-	int read_fail = 0, finish_log_stream = 0, create_log_stream;
-	int res;
+	int in_buf = 0, pos, start;
+	int read_fail = 0, create_log_stream;
 	struct zlog_stream *log_stream;
 
 	if (!arg) {
@@ -154,58 +152,35 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 		log_stream = child->log_stream;
 	}
 
-	while (fifo_in || fifo_out) {
-		if (fifo_in) {
-			res = read(fd, buf + in_buf, max_buf_size - 1 - in_buf);
-			if (res <= 0) { /* no data */
-				fifo_in = 0;
-				if (res == 0 || (errno != EAGAIN && errno != EWOULDBLOCK)) {
-					/* pipe is closed or error */
-					read_fail = (res < 0) ? res : 1;
-				}
-			} else {
-				in_buf += res;
-				/* check if buffer should be flushed */
-				if (!buf[in_buf - 1] && in_buf >= sizeof(FPMI_STDIO_CMD_FLUSH) &&
-						!memcmp(buf + in_buf - sizeof(FPMI_STDIO_CMD_FLUSH),
-							FPMI_STDIO_CMD_FLUSH, sizeof(FPMI_STDIO_CMD_FLUSH))) {
-					/* if buffer ends with flush cmd, then the stream will be finished */
-					finish_log_stream = 1;
-					in_buf -= sizeof(FPMI_STDIO_CMD_FLUSH);
-				} else if (!buf[0] && in_buf > sizeof(FPMI_STDIO_CMD_FLUSH) &&
-						!memcmp(buf, FPMI_STDIO_CMD_FLUSH, sizeof(FPMI_STDIO_CMD_FLUSH))) {
-					/* if buffer starts with flush cmd, then the stream will be finished */
-					finish_log_stream = 1;
-					in_buf -= sizeof(FPMI_STDIO_CMD_FLUSH);
-					/* move data behind the flush cmd */
-					memmove(buf, buf + sizeof(FPMI_STDIO_CMD_FLUSH), in_buf);
-				}
+	while (1) {
+		in_buf = read(fd, buf, max_buf_size - 1);
+		if (in_buf <= 0) { /* no data */
+			if (in_buf == 0 || (errno != EAGAIN && errno != EWOULDBLOCK)) {
+				/* pipe is closed or error */
+				read_fail = (in_buf < 0) ? in_buf : 1;
 			}
+			break;
 		}
 
-		if (fifo_out) {
-			if (in_buf == 0) {
-				fifo_out = 0;
-			} else {
-				char *nl;
-
-				nl = memchr(buf, '\n', in_buf);
-				if (nl) {
-					/* we should print each new line int the new message */
-					int out_len = nl - buf;
-					zlog_stream_str(log_stream, buf, out_len);
+		for (start = 0, pos = 0; pos < in_buf; pos++) {
+			switch (buf[pos]) {
+				case '\n':
+					zlog_stream_str(log_stream, buf + start, pos - start + 1);
 					zlog_stream_finish(log_stream);
-					/* skip new line */
-					out_len++;
-					/* move data in the buffer */
-					memmove(buf, buf + out_len, in_buf - out_len);
-					in_buf -= out_len;
-				} else if (in_buf == max_buf_size - 1 || !fifo_in) {
-					/* we should print if no more space in the buffer or no more data to come */
-					zlog_stream_str(log_stream, buf, in_buf);
-					in_buf = 0;
-				}
+					start = pos + 1;
+					break;
+				case '\0':
+					if (pos + sizeof(FPMI_STDIO_CMD_FLUSH) <= in_buf &&
+							!memcmp(buf + pos, FPMI_STDIO_CMD_FLUSH, sizeof(FPMI_STDIO_CMD_FLUSH))) {
+						zlog_stream_finish(log_stream);
+						start = pos + sizeof(FPMI_STDIO_CMD_FLUSH);
+						pos = start - 1;
+					}
+					break;
 			}
+		}
+		if (start < pos) {
+			zlog_stream_str(log_stream, buf + start, pos - start);
 		}
 	}
 
@@ -227,8 +202,6 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 			close(child->fd_stderr);
 			child->fd_stderr = -1;
 		}
-	} else if (finish_log_stream) {
-		zlog_stream_finish(log_stream);
 	}
 }
 /* }}} */
