@@ -1,7 +1,10 @@
 --TEST--
 FPMI: bug76895 - Child blocks reload after fatal error
 --SKIPIF--
-<?php include "skipif.inc"; ?>
+<?php
+echo "skip: temporary till signals reload fix is in\n";
+include "skipif.inc";
+?>
 --FILE--
 <?php
 
