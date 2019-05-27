@@ -165,13 +165,14 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 		for (start = 0, pos = 0; pos < in_buf; pos++) {
 			switch (buf[pos]) {
 				case '\n':
-					zlog_stream_str(log_stream, buf + start, pos - start + 1);
+					zlog_stream_str(log_stream, buf + start, pos - start);
 					zlog_stream_finish(log_stream);
 					start = pos + 1;
 					break;
 				case '\0':
 					if (pos + sizeof(FPMI_STDIO_CMD_FLUSH) <= in_buf &&
 							!memcmp(buf + pos, FPMI_STDIO_CMD_FLUSH, sizeof(FPMI_STDIO_CMD_FLUSH))) {
+						zlog_stream_str(log_stream, buf + start, pos - start);
 						zlog_stream_finish(log_stream);
 						start = pos + sizeof(FPMI_STDIO_CMD_FLUSH);
 						pos = start - 1;
