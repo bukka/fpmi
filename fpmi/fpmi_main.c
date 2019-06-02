@@ -95,6 +95,11 @@ int __riscosify_control = __RISCOSIFY_STRICT_UNIX_SPECS;
 #include "fpmi_log.h"
 #include "zlog.h"
 
+#if HAVE_SIGNAL_H
+# include "fpmi_signals.h"
+#endif
+
+
 /* XXX this will need to change later when threaded fastcgi is implemented.  shane */
 struct sigaction act, old_term, old_quit, old_int;
 
@@ -1620,12 +1625,23 @@ int main(int argc, char *argv[])
 
 #ifdef HAVE_SIGNAL_H
 #if defined(SIGPIPE) && defined(SIG_IGN)
+	/* SIGHUP is debian-specific, see debian/patches/0034-php-fpm-do-reload-on-SIGHUP.patch */
+	/* Subset of signals from fpm_signals_init_main() to avoid unexpected death during early init
+		or during reload just after execvp() */
+	int init_signal_array[] = { SIGUSR1, SIGUSR2, SIGHUP, SIGCHLD };
+	if (0 > fpmi_signals_init_mask(init_signal_array, sizeof(init_signal_array)/sizeof(init_signal_array[0])) ||
+			0 > fpmi_signals_block()) {
+		zlog(ZLOG_WARNING, "Could die in the case of too early reload signal");
+	}
+
 	signal(SIGPIPE, SIG_IGN); /* ignore SIGPIPE in standalone mode so
 								that sockets created via fsockopen()
 								don't kill PHP if the remote site
 								closes it.  in apache|apxs mode apache
 								does that for us!  thies@thieso.net
 								20000419 */
+
+	zlog(ZLOG_DEBUG, "Blocked some signals");
 #endif
 #endif
 
