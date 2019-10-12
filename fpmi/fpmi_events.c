@@ -421,17 +421,16 @@ void fpmi_event_loop(int err) /* {{{ */
 		/* trigger timers */
 		q = fpmi_event_queue_timer;
 		while (q) {
+			struct fpmi_event_queue_s *next = q->next;
 			fpmi_clock_get(&now);
 			if (q->ev) {
 				if (timercmp(&now, &q->ev->timeout, >) || timercmp(&now, &q->ev->timeout, ==)) {
-					fpmi_event_fire(q->ev);
-					/* sanity check */
-					if (fpmi_globals.parent_pid != getpid()) {
-						return;
-					}
-					if (q->ev->flags & FPMI_EV_PERSIST) {
-						fpmi_event_set_timeout(q->ev, now);
-					} else { /* delete the event */
+					struct fpmi_event_s *ev = q->ev;
+					if (ev->flags & FPMI_EV_PERSIST) {
+						fpmi_event_set_timeout(ev, now);
+					} else {
+						/* Delete the event. Make sure this happens before it is fired,
+						 * so that the event callback may register the same timer again. */
 						q2 = q;
 						if (q->prev) {
 							q->prev->next = q->next;
@@ -445,13 +444,18 @@ void fpmi_event_loop(int err) /* {{{ */
 								fpmi_event_queue_timer->prev = NULL;
 							}
 						}
-						q = q->next;
 						free(q2);
-						continue;
+					}
+
+					fpmi_event_fire(ev);
+
+					/* sanity check */
+					if (fpmi_globals.parent_pid != getpid()) {
+						return;
 					}
 				}
 			}
-			q = q->next;
+			q = next;
 		}
 	}
 }
