@@ -7,7 +7,9 @@ if (getenv("SKIP_SLOW_TESTS")) die("skip slow test");
 ?>
 --FILE--
 <?php
+
 require_once "tester.inc";
+
 $cfg = <<<EOT
 [global]
 error_log = {{FILE:LOG}}
@@ -23,14 +25,17 @@ pm.start_servers = 1
 pm.min_spare_servers = 1
 pm.max_spare_servers = 1
 EOT;
+
 $code = <<<EOT
 <?php
 /* empty */
 EOT;
+
 $tester = new FPMI\Tester($cfg, $code);
 $tester->start();
 $tester->expectLogStartNotices();
 $tester->ping('{{ADDR}}');
+
 /* Vary interval between concurrent reload requests
     since performance of test instance is not known in advance */
 $max_interval = 25000;
@@ -55,9 +60,11 @@ $tester->expectLogNotice('reloading: .*');
 $tester->expectLogNotice('using inherited socket fd=\d+, "127.0.0.1:\d+"');
 $tester->expectLogStartNotices();
 $tester->ping('{{ADDR}}');
+
 $tester->terminate();
 $tester->expectLogTerminatingNotices();
 $tester->close();
+
 ?>
 Done
 --EXPECT--
