@@ -43,9 +43,7 @@
 # include <unistd.h>
 #endif
 
-#if HAVE_SIGNAL_H
-# include <signal.h>
-#endif
+#include <signal.h>
 
 #if HAVE_SETLOCALE
 # include <locale.h>
@@ -95,9 +93,7 @@ int __riscosify_control = __RISCOSIFY_STRICT_UNIX_SPECS;
 #include "fpmi_log.h"
 #include "zlog.h"
 
-#if HAVE_SIGNAL_H
 # include "fpmi_signals.h"
-#endif
 
 
 /* XXX this will need to change later when threaded fastcgi is implemented.  shane */
@@ -1623,7 +1619,6 @@ int main(int argc, char *argv[])
 	int php_information = 0;
 	int php_allow_to_run_as_root = 0;
 
-#ifdef HAVE_SIGNAL_H
 #if defined(SIGPIPE) && defined(SIG_IGN)
 	/* SIGHUP is debian-specific, see debian/patches/0034-php-fpm-do-reload-on-SIGHUP.patch */
 	/* Subset of signals from fpm_signals_init_main() to avoid unexpected death during early init
@@ -1642,7 +1637,6 @@ int main(int argc, char *argv[])
 								20000419 */
 
 	zlog(ZLOG_DEBUG, "Blocked some signals");
-#endif
 #endif
 
 #ifdef ZTS
