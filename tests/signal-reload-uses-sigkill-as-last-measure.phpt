@@ -47,5 +47,5 @@ Done
 --CLEAN--
 <?php
 require_once "tester.inc";
-FPM\Tester::clean();
+FPMI\Tester::clean();
 ?>
