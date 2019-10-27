@@ -107,6 +107,9 @@ int fpmi_stdio_init_child(struct fpmi_worker_pool_s *wp) /* {{{ */
 }
 /* }}} */
 
+
+#define FPMI_STREAM_SET_MSG_PREFIX_FMT "[pool %s] child %d said into %s: "
+
 #define FPMI_STDIO_CMD_FLUSH "\0fscf"
 
 int fpmi_stdio_flush_child() /* {{{ */
@@ -123,7 +126,7 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 	struct fpmi_child_s *child;
 	int is_stdout;
 	struct fpmi_event_s *event;
-	int in_buf = 0, pos, start;
+	int in_buf = 0, cmd_pos = 0, pos, start;
 	int read_fail = 0, create_log_stream;
 	struct zlog_stream *log_stream;
 
@@ -145,14 +148,26 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 		zlog_stream_init_ex(log_stream, ZLOG_WARNING, STDERR_FILENO);
 		zlog_stream_set_decorating(log_stream, child->wp->config->decorate_workers_output);
 		zlog_stream_set_wrapping(log_stream, ZLOG_TRUE);
-		zlog_stream_set_msg_prefix(log_stream, "[pool %s] child %d said into %s: ",
+		zlog_stream_set_msg_prefix(log_stream, FPMI_STREAM_SET_MSG_PREFIX_FMT,
 				child->wp->config->name, (int) child->pid, is_stdout ? "stdout" : "stderr");
 		zlog_stream_set_msg_quoting(log_stream, ZLOG_TRUE);
+		zlog_stream_set_is_stdout(log_stream, is_stdout);
+		zlog_stream_set_child_pid(log_stream, (int)child->pid);
 	} else {
 		log_stream = child->log_stream;
+		// if fd type (stdout/stderr) or child's pid is changed,
+		// then the stream will be finished and msg's prefix will be reinitialized
+		if (log_stream->is_stdout != (unsigned int)is_stdout || log_stream->child_pid != (int)child->pid) {
+			zlog_stream_finish(log_stream);
+			zlog_stream_set_msg_prefix(log_stream, FPMI_STREAM_SET_MSG_PREFIX_FMT,
+					child->wp->config->name, (int) child->pid, is_stdout ? "stdout" : "stderr");
+			zlog_stream_set_is_stdout(log_stream, is_stdout);
+			zlog_stream_set_child_pid(log_stream, (int)child->pid);
+		}
 	}
 
 	while (1) {
+stdio_read:
 		in_buf = read(fd, buf, max_buf_size - 1);
 		if (in_buf <= 0) { /* no data */
 			if (in_buf == 0 || (errno != EAGAIN && errno != EWOULDBLOCK)) {
@@ -161,8 +176,17 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 			}
 			break;
 		}
-
-		for (start = 0, pos = 0; pos < in_buf; pos++) {
+		start = 0;
+		if (cmd_pos > 0) {
+			if 	(!memcmp(buf, &FPMI_STDIO_CMD_FLUSH[cmd_pos], sizeof(FPMI_STDIO_CMD_FLUSH) - cmd_pos)) {
+				zlog_stream_finish(log_stream);
+				start = cmd_pos;
+			} else {
+				zlog_stream_str(log_stream, &FPMI_STDIO_CMD_FLUSH[0], cmd_pos);
+			}
+			cmd_pos = 0;
+		}
+		for (pos = 0; pos < in_buf; pos++) {
 			switch (buf[pos]) {
 				case '\n':
 					zlog_stream_str(log_stream, buf + start, pos - start);
@@ -170,12 +194,17 @@ static void fpmi_stdio_child_said(struct fpmi_event_s *ev, short which, void *ar
 					start = pos + 1;
 					break;
 				case '\0':
-					if (pos + sizeof(FPMI_STDIO_CMD_FLUSH) <= in_buf &&
-							!memcmp(buf + pos, FPMI_STDIO_CMD_FLUSH, sizeof(FPMI_STDIO_CMD_FLUSH))) {
+					if (pos + sizeof(FPMI_STDIO_CMD_FLUSH) <= in_buf) {
+						if (!memcmp(buf + pos, FPMI_STDIO_CMD_FLUSH, sizeof(FPMI_STDIO_CMD_FLUSH))) {
+							zlog_stream_str(log_stream, buf + start, pos - start);
+							zlog_stream_finish(log_stream);
+							start = pos + sizeof(FPMI_STDIO_CMD_FLUSH);
+							pos = start - 1;
+						}
+					} else if (!memcmp(buf + pos, FPMI_STDIO_CMD_FLUSH, in_buf - pos)) {
+						cmd_pos = in_buf - pos;
 						zlog_stream_str(log_stream, buf + start, pos - start);
-						zlog_stream_finish(log_stream);
-						start = pos + sizeof(FPMI_STDIO_CMD_FLUSH);
-						pos = start - 1;
+						goto stdio_read;
 					}
 					break;
 			}

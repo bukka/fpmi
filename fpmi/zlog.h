@@ -74,8 +74,10 @@ struct zlog_stream {
 	unsigned int wrap:1;
 	unsigned int msg_quote:1;
 	unsigned int decorate:1;
+	unsigned int is_stdout:1;
 	int fd;
 	int line;
+	int child_pid;
 	const char *function;
 	struct zlog_stream_buffer buf;
 	size_t len;
