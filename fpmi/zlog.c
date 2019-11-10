@@ -564,6 +564,18 @@ void zlog_stream_set_wrapping(struct zlog_stream *stream, zlog_bool wrap) /* {{{
 }
 /* }}} */
 
+void zlog_stream_set_is_stdout(struct zlog_stream *stream, zlog_bool is_stdout) /* {{{ */
+{
+	stream->is_stdout = is_stdout ? 1 : 0;
+}
+/* }}} */
+
+void zlog_stream_set_child_pid(struct zlog_stream *stream, int child_pid) /* {{{ */
+{
+	stream->child_pid = child_pid;
+}
+/* }}} */
+
 void zlog_stream_set_msg_quoting(struct zlog_stream *stream, zlog_bool quote) /* {{{ */
 {
 	stream->msg_quote = quote && stream->decorate ? 1 : 0;
