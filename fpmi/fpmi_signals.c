@@ -21,6 +21,7 @@
 
 static int sp[2];
 static sigset_t block_sigset;
+static sigset_t child_block_sigset;
 
 const char *fpmi_signal_names[NSIG + 1] = {
 #ifdef SIGHUP
@@ -167,8 +168,11 @@ static void sig_handler(int signo) /* {{{ */
 	int saved_errno;
 
 	if (fpmi_globals.parent_pid != getpid()) {
-		/* prevent a signal race condition when child process
-			have not set up it's own signal handler yet */
+		/* Avoid using of signal handlers from the master process in a worker
+			before the child sets up its own signal handlers.
+			Normally it is prevented by the sigprocmask() calls
+			around fork(). This execution branch is a last resort trap
+			that has no protection against #76601. */
 		return;
 	}
 
@@ -259,16 +263,21 @@ int fpmi_signals_get_fd() /* {{{ */
 }
 /* }}} */
 
-int fpmi_signals_init_mask(int *signum_array, size_t size) /* {{{ */
+int fpmi_signals_init_mask() /* {{{ */
 {
+	/* Subset of signals from fpm_signals_init_main() and fpm_got_signal()
+		blocked to avoid unexpected death during early init
+		or during reload just after execvp() or fork */
+	int init_signal_array[] = { SIGUSR1, SIGUSR2, SIGCHLD };
+	size_t size = sizeof(init_signal_array) / sizeof(init_signal_array[0]);
 	size_t i = 0;
-	if (0 > sigemptyset(&block_sigset)) {
+	if (0 > sigemptyset(&block_sigset) || 0 > sigemptyset(&child_block_sigset)) {
 		zlog(ZLOG_SYSERROR, "failed to prepare signal block mask: sigemptyset()");
 		return -1;
 	}
 	for (i = 0; i < size; ++i) {
-		int sig_i = signum_array[i];
-		if (0 > sigaddset(&block_sigset, sig_i)) {
+		int sig_i = init_signal_array[i];
+		if (0 > sigaddset(&block_sigset, sig_i) || 0 > sigaddset(&child_block_sigset, sig_i)) {
 			if (sig_i <= NSIG && fpmi_signal_names[sig_i] != NULL) {
 				zlog(ZLOG_SYSERROR, "failed to prepare signal block mask: sigaddset(%s)",
 						fpmi_signal_names[sig_i]);
@@ -277,6 +286,11 @@ int fpmi_signals_init_mask(int *signum_array, size_t size) /* {{{ */
 			}
 			return -1;
 		}
+	}
+	if (0 > sigaddset(&child_block_sigset, SIGTERM) ||
+			0 > sigaddset(&child_block_sigset, SIGQUIT)) {
+		zlog(ZLOG_SYSERROR, "failed to prepare child signal block mask: sigaddset()");
+		return -1;
 	}
 	return 0;
 }
@@ -287,6 +301,16 @@ int fpmi_signals_block() /* {{{ */
 	zlog(ZLOG_DEBUG, "Blocking some signals");
 	if (0 > sigprocmask(SIG_BLOCK, &block_sigset, NULL)) {
 		zlog(ZLOG_SYSERROR, "failed to block signals");
+		return -1;
+	}
+	return 0;
+}
+/* }}} */
+
+int fpmi_signals_child_block() /* {{{ */
+{
+	if (0 > sigprocmask(SIG_BLOCK, &child_block_sigset, NULL)) {
+		zlog(ZLOG_SYSERROR, "failed to block child signals");
 		return -1;
 	}
 	return 0;

@@ -1620,15 +1620,6 @@ int main(int argc, char *argv[])
 	int php_allow_to_run_as_root = 0;
 
 #if defined(SIGPIPE) && defined(SIG_IGN)
-	/* SIGHUP is debian-specific, see debian/patches/0034-php-fpm-do-reload-on-SIGHUP.patch */
-	/* Subset of signals from fpm_signals_init_main() to avoid unexpected death during early init
-		or during reload just after execvp() */
-	int init_signal_array[] = { SIGUSR1, SIGUSR2, SIGHUP, SIGCHLD };
-	if (0 > fpmi_signals_init_mask(init_signal_array, sizeof(init_signal_array)/sizeof(init_signal_array[0])) ||
-			0 > fpmi_signals_block()) {
-		zlog(ZLOG_WARNING, "Could die in the case of too early reload signal");
-	}
-
 	signal(SIGPIPE, SIG_IGN); /* ignore SIGPIPE in standalone mode so
 								that sockets created via fsockopen()
 								don't kill PHP if the remote site
@@ -1636,6 +1627,9 @@ int main(int argc, char *argv[])
 								does that for us!  thies@thieso.net
 								20000419 */
 
+	if (0 > fpmi_signals_init_mask() || 0 > fpmi_signals_block()) {
+		zlog(ZLOG_WARNING, "Could die in the case of too early reload signal");
+	}
 	zlog(ZLOG_DEBUG, "Blocked some signals");
 #endif
 

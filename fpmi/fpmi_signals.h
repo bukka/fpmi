@@ -9,8 +9,9 @@
 int fpmi_signals_init_main();
 int fpmi_signals_init_child();
 int fpmi_signals_get_fd();
-int fpmi_signals_init_mask(int *signum_array, size_t size);
+int fpmi_signals_init_mask();
 int fpmi_signals_block();
+int fpmi_signals_child_block();
 int fpmi_signals_unblock();
 
 extern const char *fpmi_signal_names[NSIG + 1];

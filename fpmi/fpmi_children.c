@@ -405,6 +405,11 @@ int fpmi_children_make(struct fpmi_worker_pool_s *wp, int in_event_loop, int nb_
 			return 2;
 		}
 
+		zlog(ZLOG_DEBUG, "blocking signals before child birth");
+		if (0 > fpmi_signals_child_block()) {
+			zlog(ZLOG_WARNING, "child may miss signals");
+		}
+
 		pid = fork();
 
 		switch (pid) {
@@ -416,12 +421,16 @@ int fpmi_children_make(struct fpmi_worker_pool_s *wp, int in_event_loop, int nb_
 				return 0;
 
 			case -1 :
+				zlog(ZLOG_DEBUG, "unblocking signals");
+				fpmi_signals_unblock();
 				zlog(ZLOG_SYSERROR, "fork() failed");
 
 				fpmi_resources_discard(child);
 				return 2;
 
 			default :
+				zlog(ZLOG_DEBUG, "unblocking signals, child born");
+				fpmi_signals_unblock();
 				child->pid = pid;
 				fpmi_clock_get(&child->started);
 				fpmi_parent_resources_use(child);
