@@ -253,6 +253,11 @@ int fpmi_signals_init_child() /* {{{ */
 	}
 
 	zend_signal_init();
+
+	if (0 > fpmi_signals_unblock()) {
+		return -1;
+	}
+
 	return 0;
 }
 /* }}} */
@@ -298,7 +303,6 @@ int fpmi_signals_init_mask() /* {{{ */
 
 int fpmi_signals_block() /* {{{ */
 {
-	zlog(ZLOG_DEBUG, "Blocking some signals");
 	if (0 > sigprocmask(SIG_BLOCK, &block_sigset, NULL)) {
 		zlog(ZLOG_SYSERROR, "failed to block signals");
 		return -1;
@@ -321,7 +325,6 @@ int fpmi_signals_unblock() /* {{{ */
 {
 	/* Ensure that during reload after upgrade all signals are unblocked.
 		block_sigset could have different value before execve() */
-	zlog(ZLOG_DEBUG, "Unblocking all signals");
 	sigset_t all_signals;
 	sigfillset(&all_signals);
 	if (0 > sigprocmask(SIG_UNBLOCK, &all_signals, NULL)) {
