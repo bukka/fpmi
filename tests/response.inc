@@ -91,6 +91,26 @@ class Response
     }
 
     /**
+     * @param string $bodyRegExp
+     * @param string $contentType
+     * @return Response
+     */
+    public function expectBodyRegExp($bodyRegExp, $contentType = 'text/html')
+    {
+        if (
+            $this->checkIfValid() &&
+            $this->checkDefaultHeaders($contentType) &&
+            !preg_match($bodyRegExp, $this->rawBody)
+        ) {
+            $this->error(
+                "The expected body RegExp '$bodyRegExp' does not match body '$this->rawBody'"
+            );
+        }
+
+        return $this;
+    }
+
+    /**
      * @return Response
      */
     public function expectEmptyBody()
