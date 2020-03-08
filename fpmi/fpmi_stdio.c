@@ -178,7 +178,8 @@ stdio_read:
 		}
 		start = 0;
 		if (cmd_pos > 0) {
-			if 	(!memcmp(buf, &FPMI_STDIO_CMD_FLUSH[cmd_pos], sizeof(FPMI_STDIO_CMD_FLUSH) - cmd_pos)) {
+			if 	((sizeof(FPMI_STDIO_CMD_FLUSH) - cmd_pos) <= in_buf &&
+					!memcmp(buf, &FPMI_STDIO_CMD_FLUSH[cmd_pos], sizeof(FPMI_STDIO_CMD_FLUSH) - cmd_pos)) {
 				zlog_stream_finish(log_stream);
 				start = cmd_pos;
 			} else {
@@ -186,7 +187,7 @@ stdio_read:
 			}
 			cmd_pos = 0;
 		}
-		for (pos = 0; pos < in_buf; pos++) {
+		for (pos = start; pos < in_buf; pos++) {
 			switch (buf[pos]) {
 				case '\n':
 					zlog_stream_str(log_stream, buf + start, pos - start);
