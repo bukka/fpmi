@@ -54,6 +54,10 @@ int fpmi_scoreboard_init_main() /* {{{ */
 			return -1;
 		}
 
+		if (wp->shared) {
+			wp->scoreboard = wp->shared->scoreboard;
+		}
+
 		scoreboard_size        = sizeof(struct fpmi_scoreboard_s) + (wp->config->pm_max_children) * sizeof(struct fpmi_scoreboard_proc_s *);
 		scoreboard_nprocs_size = sizeof(struct fpmi_scoreboard_proc_s) * wp->config->pm_max_children;
 		shm_mem                = fpmi_shm_alloc(scoreboard_size + scoreboard_nprocs_size);
