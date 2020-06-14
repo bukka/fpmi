@@ -140,6 +140,7 @@ static struct ini_value_parser_s ini_fpmi_pool_options[] = {
 	{ "pm.process_idle_timeout",   &fpmi_conf_set_time,        WPO(pm_process_idle_timeout) },
 	{ "pm.max_requests",           &fpmi_conf_set_integer,     WPO(pm_max_requests) },
 	{ "pm.status_path",            &fpmi_conf_set_string,      WPO(pm_status_path) },
+	{ "pm.status_listen",          &fpmi_conf_set_string,      WPO(pm_status_listen) },
 	{ "ping.path",                 &fpmi_conf_set_string,      WPO(ping_path) },
 	{ "ping.response",             &fpmi_conf_set_string,      WPO(ping_response) },
 	{ "access.log",                &fpmi_conf_set_string,      WPO(access_log) },
