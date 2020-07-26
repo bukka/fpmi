@@ -687,6 +687,53 @@ int fpmi_worker_pool_config_free(struct fpmi_worker_pool_config_s *wpc) /* {{{ *
 }
 /* }}} */
 
+#define FPMI_WPC_STR_CP_EX(_cfg, _scfg, _sf, _df) \
+	do { \
+		if (_scfg->_df && !(_cfg->_sf = strdup(_scfg->_df))) { \
+			return -1; \
+		} \
+	} while (0)
+#define FPMI_WPC_STR_CP(_cfg, _scfg, _field) FPMI_WPC_STR_CP_EX(_cfg, _scfg, _field, _field)
+
+static int fpmi_worker_pool_shared_status_alloc(struct fpmi_worker_pool_s *shared_wp) { /* {{{ */
+	struct fpmi_worker_pool_config_s *config, *shared_config;
+	config = fpmi_worker_pool_config_alloc();
+	if (!config) {
+		return -1;
+	}
+	shared_config = shared_wp->config;
+
+	config->name = malloc(strlen(shared_config->name) + sizeof("_status"));
+	if (!config->name) {
+		return -1;
+	}
+	strcpy(config->name, shared_config->name);
+	strcpy(config->name + strlen(shared_config->name), "_status");
+
+	if (!shared_config->pm_status_path) {
+		shared_config->pm_status_path = strdup("/");
+	}
+
+	FPMI_WPC_STR_CP_EX(config, shared_config, listen_address, pm_status_listen);
+	FPMI_WPC_STR_CP(config, shared_config, listen_acl_groups);
+	FPMI_WPC_STR_CP(config, shared_config, listen_acl_users);
+	FPMI_WPC_STR_CP(config, shared_config, listen_allowed_clients);
+	FPMI_WPC_STR_CP(config, shared_config, listen_group);
+	FPMI_WPC_STR_CP(config, shared_config, listen_owner);
+	FPMI_WPC_STR_CP(config, shared_config, listen_mode);
+	FPMI_WPC_STR_CP(config, shared_config, user);
+	FPMI_WPC_STR_CP(config, shared_config, group);
+	FPMI_WPC_STR_CP(config, shared_config, pm_status_path);
+
+	config->pm = PM_STYLE_ONDEMAND;
+	config->pm_max_children = 1;
+
+	current_wp->shared = shared_wp;
+
+	return 0;
+}
+/* }}} */
+
 static int fpmi_evaluate_full_path(char **path, struct fpmi_worker_pool_s *wp, char *default_prefix, int expand) /* {{{ */
 {
 	char *prefix = NULL;
@@ -861,6 +908,10 @@ static int fpmi_conf_process_all_pools() /* {{{ */
 		}
 
 		/* status */
+		if (wp->config->pm_status_listen && fpmi_worker_pool_shared_status_alloc(wp)) {
+			zlog(ZLOG_ERROR, "[pool %s] failed to initialize a status listener pool", wp->config->name);
+		}
+
 		if (wp->config->pm_status_path && *wp->config->pm_status_path) {
 			size_t i;
 			char *status = wp->config->pm_status_path;
@@ -870,7 +921,7 @@ static int fpmi_conf_process_all_pools() /* {{{ */
 				return -1;
 			}
 
-			if (strlen(status) < 2) {
+			if (!wp->config->pm_status_listen && !wp->shared && strlen(status) < 2) {
 				zlog(ZLOG_ERROR, "[pool %s] the status path '%s' is not long enough", wp->config->name, status);
 				return -1;
 			}
@@ -1254,10 +1305,7 @@ static int fpmi_conf_post_process(int force_daemon) /* {{{ */
 	}
 
 	for (wp = fpmi_worker_all_pools; wp; wp = wp->next) {
-		if (!wp->config->access_log || !*wp->config->access_log) {
-			continue;
-		}
-		if (0 > fpmi_log_write(wp->config->access_format)) {
+		if (wp->config->access_log && *wp->config->access_log && 0 > fpmi_log_write(wp->config->access_format)) {
 			zlog(ZLOG_ERROR, "[pool %s] wrong format for access.format '%s'", wp->config->name, wp->config->access_format);
 			return -1;
 		}
@@ -1639,7 +1687,11 @@ static void fpmi_conf_dump() /* {{{ */
 
 	for (wp = fpmi_worker_all_pools; wp; wp = wp->next) {
 		struct key_value_s *kv;
-		if (!wp->config) continue;
+
+		if (!wp->config || wp->shared) {
+			continue;
+		}
+
 		zlog(ZLOG_NOTICE, "[%s]",                              STR2STR(wp->config->name));
 		zlog(ZLOG_NOTICE, "\tprefix = %s",                     STR2STR(wp->config->prefix));
 		zlog(ZLOG_NOTICE, "\tuser = %s",                       STR2STR(wp->config->user));
@@ -1668,6 +1720,7 @@ static void fpmi_conf_dump() /* {{{ */
 		zlog(ZLOG_NOTICE, "\tpm.process_idle_timeout = %d",    wp->config->pm_process_idle_timeout);
 		zlog(ZLOG_NOTICE, "\tpm.max_requests = %d",            wp->config->pm_max_requests);
 		zlog(ZLOG_NOTICE, "\tpm.status_path = %s",             STR2STR(wp->config->pm_status_path));
+		zlog(ZLOG_NOTICE, "\tpm.status_listen = %s",           STR2STR(wp->config->pm_status_listen));
 		zlog(ZLOG_NOTICE, "\tping.path = %s",                  STR2STR(wp->config->ping_path));
 		zlog(ZLOG_NOTICE, "\tping.response = %s",              STR2STR(wp->config->ping_response));
 		zlog(ZLOG_NOTICE, "\taccess.log = %s",                 STR2STR(wp->config->access_log));
