@@ -726,7 +726,7 @@ static int fpmi_worker_pool_shared_status_alloc(struct fpmi_worker_pool_s *share
 	FPMI_WPC_STR_CP(config, shared_config, pm_status_path);
 
 	config->pm = PM_STYLE_ONDEMAND;
-	config->pm_max_children = 1;
+	config->pm_max_children = 2;
 
 	current_wp->shared = shared_wp;
 
