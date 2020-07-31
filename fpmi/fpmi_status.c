@@ -54,8 +54,13 @@ int fpmi_status_export_to_zval(zval *status)
 	double cpu;
 	int i;
 
+	scoreboard_p = fpmi_scoreboard_get();
+	if (scoreboard_p->shared) {
+		/* use shared scoreboard if available */
+		scoreboard_p = scoreboard_p->shared;
+	}
 
-	scoreboard_p = fpmi_scoreboard_acquire(NULL, 1);
+	scoreboard_p = fpmi_scoreboard_acquire(scoreboard_p, 1);
 	if (!scoreboard_p) {
 		zlog(ZLOG_NOTICE, "[pool %s] status: scoreboard already in use.", scoreboard_p->pool);
 		return -1;
@@ -179,6 +184,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 		fpmi_request_executing();
 
 		scoreboard_p = fpmi_scoreboard_get();
+		if (scoreboard_p->shared) {
+			scoreboard_p = scoreboard_p->shared;
+		}
 		if (!scoreboard_p) {
 			zlog(ZLOG_ERROR, "status: unable to find or access status shared memory");
 			SG(sapi_headers).http_response_code = 500;

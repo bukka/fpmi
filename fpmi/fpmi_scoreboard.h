@@ -64,6 +64,7 @@ struct fpmi_scoreboard_s {
 	unsigned int nprocs;
 	int free_proc;
 	unsigned long int slow_rq;
+	struct fpmi_scoreboard_s *shared;
 	struct fpmi_scoreboard_proc_s *procs[];
 };
 

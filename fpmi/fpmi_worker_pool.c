@@ -42,7 +42,7 @@ static void fpmi_worker_pool_cleanup(int which, void *arg) /* {{{ */
 		wp_next = wp->next;
 		fpmi_worker_pool_config_free(wp->config);
 		fpmi_children_free(wp->children);
-		if (!wp->shared && (which & FPMI_CLEANUP_CHILD) == 0 && fpmi_globals.parent_pid == getpid()) {
+		if ((which & FPMI_CLEANUP_CHILD) == 0 && fpmi_globals.parent_pid == getpid()) {
 			fpmi_scoreboard_free(wp->scoreboard);
 		}
 		fpmi_worker_pool_free(wp);
