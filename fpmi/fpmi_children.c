@@ -347,7 +347,7 @@ static void fpmi_child_resources_use(struct fpmi_child_s *child) /* {{{ */
 {
 	struct fpmi_worker_pool_s *wp;
 	for (wp = fpmi_worker_all_pools; wp; wp = wp->next) {
-		if (wp == child->wp) {
+		if (wp == child->wp || wp == child->wp->shared) {
 			continue;
 		}
 		fpmi_scoreboard_free(wp->scoreboard);
