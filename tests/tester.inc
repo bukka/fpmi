@@ -571,6 +571,9 @@ class Tester
             ],
             $headers
         );
+        $params = array_filter($params, function($value) {
+            return !is_null($value);
+        });
 
         try {
             $this->response = new Response(
