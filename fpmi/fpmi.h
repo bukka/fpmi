@@ -34,6 +34,14 @@
 #define FPMI_EXIT_CONFIG 78
 #endif
 
+#if PHP_VERSION_ID < 80000
+#define fpmi_char char
+#define fpmi_bucket_t const void
+#else
+#define fpmi_char const char
+#define fpmi_bucket_t Bucket
+#endif
+
 
 int fpmi_run(int *max_requests);
 int fpmi_init(int argc, char **argv, char *config, char *prefix, char *pid, int test_conf, int run_as_root, int force_daemon, int force_stderr);

@@ -111,7 +111,7 @@ static int parent = 1;
 static int request_body_fd;
 static int fpmi_is_running = 0;
 
-static char *sapi_cgibin_getenv(char *name, size_t name_len);
+static char *sapi_cgibin_getenv(fpmi_char *name, size_t name_len);
 static void fastcgi_ini_parser(zval *arg1, zval *arg2, zval *arg3, int callback_type, void *arg);
 
 #define PHP_MODE_STANDARD	1
@@ -193,7 +193,7 @@ static php_cgi_globals_struct php_cgi_globals;
 #define CGIG(v) (php_cgi_globals.v)
 #endif
 
-static int module_name_cmp(const void *a, const void *b) /* {{{ */
+static int module_name_cmp(fpmi_bucket_t *a, fpmi_bucket_t *b) /* {{{ */
 {
 	Bucket *f = (Bucket *) a;
 	Bucket *s = (Bucket *) b;
@@ -218,12 +218,20 @@ static void print_modules(void) /* {{{ */
 }
 /* }}} */
 
+#if PHP_VERSION_ID < 80000
 static int print_extension_info(zend_extension *ext, void *arg) /* {{{ */
 {
 	php_printf("%s\n", ext->name);
 	return 0;
 }
 /* }}} */
+#else
+static void print_extension_info(zend_extension *ext) /* {{{ */
+{
+	php_printf("%s\n", ext->name);
+}
+/* }}} */
+#endif
 
 static int extension_name_cmp(const zend_llist_element **f, const zend_llist_element **s) /* {{{ */
 {
@@ -240,7 +248,11 @@ static void print_extensions(void) /* {{{ */
 	zend_llist_copy(&sorted_exts, &zend_extensions);
 	sorted_exts.dtor = NULL;
 	zend_llist_sort(&sorted_exts, extension_name_cmp);
+#if PHP_VERSION_ID < 80000
 	zend_llist_apply_with_argument(&sorted_exts, (llist_apply_with_arg_func_t) print_extension_info, NULL);
+#else
+	zend_llist_apply(&sorted_exts, (llist_apply_func_t) print_extension_info);
+#endif
 	zend_llist_destroy(&sorted_exts);
 }
 /* }}} */
@@ -476,7 +488,7 @@ static size_t sapi_cgi_read_post(char *buffer, size_t count_bytes) /* {{{ */
 }
 /* }}} */
 
-static char *sapi_cgibin_getenv(char *name, size_t name_len) /* {{{ */
+static char *sapi_cgibin_getenv(fpmi_char *name, size_t name_len) /* {{{ */
 {
 	/* if fpmi has started, use fcgi env */
 	if (fpmi_is_running) {
@@ -513,7 +525,7 @@ static char *sapi_cgi_read_cookies(void) /* {{{ */
 }
 /* }}} */
 
-static void cgi_php_load_env_var(char *var, unsigned int var_len, char *val, unsigned int val_len, void *arg) /* {{{ */
+static void cgi_php_load_env_var(fpmi_char *var, unsigned int var_len, char *val, unsigned int val_len, void *arg) /* {{{ */
 {
 	zval *array_ptr = (zval*)arg;
 	int filter_arg = (Z_ARR_P(array_ptr) == Z_ARR(PG(http_globals)[TRACK_VARS_ENV]))?PARSE_ENV:PARSE_SERVER;
@@ -618,7 +630,7 @@ void sapi_cgi_log_fastcgi(int level, char *message, size_t len)
 
 /* {{{ sapi_cgi_log_message
  */
-static void sapi_cgi_log_message(char *message, int syslog_type_int)
+static void sapi_cgi_log_message(fpmi_char *message, int syslog_type_int)
 {
 	zlog_msg(ZLOG_NOTICE, "PHP message: ", message);
 }

@@ -49,7 +49,7 @@ static int fpmi_php_zend_ini_alter_master(char *name, int name_length, char *new
 }
 /* }}} */
 
-static void fpmi_php_disable(char *value, int (*zend_disable)(char *, size_t)) /* {{{ */
+static void fpmi_php_disable(char *value, int (*zend_disable)(fpmi_char *, size_t)) /* {{{ */
 {
 	char *s = 0, *e = value;
 
@@ -97,9 +97,13 @@ int fpmi_php_apply_defines_ex(struct key_value_s *kv, int mode) /* {{{ */
 	}
 
 	if (!strcmp(name, "disable_functions") && *value) {
+#if PHP_VERSION_ID < 80000
 		char *v = strdup(value);
 		PG(disable_functions) = v;
 		fpmi_php_disable(v, zend_disable_function);
+#else
+		zend_disable_functions(value);
+#endif
 		return 1;
 	}
 
