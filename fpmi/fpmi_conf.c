@@ -715,8 +715,10 @@ static int fpmi_worker_pool_shared_status_alloc(struct fpmi_worker_pool_s *share
 	}
 
 	FPMI_WPC_STR_CP_EX(config, shared_config, listen_address, pm_status_listen);
+#ifdef HAVE_FPMI_ACL
 	FPMI_WPC_STR_CP(config, shared_config, listen_acl_groups);
 	FPMI_WPC_STR_CP(config, shared_config, listen_acl_users);
+#endif
 	FPMI_WPC_STR_CP(config, shared_config, listen_allowed_clients);
 	FPMI_WPC_STR_CP(config, shared_config, listen_group);
 	FPMI_WPC_STR_CP(config, shared_config, listen_owner);
