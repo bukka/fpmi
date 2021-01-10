@@ -16,7 +16,7 @@ log_level = notice
 include = {{INCLUDE:CONF}}
 EOT;
 
-$cfgPoolTemplate = <<<EOT
+$cfg['poolTemplate'] = <<<EOT
 [%name%]
 listen = {{ADDR[%name%]}}
 user = foo
@@ -24,10 +24,7 @@ pm = ondemand
 pm.max_children = 5
 EOT;
 
-$names = ['cccc', 'aaaa', 'eeee', 'dddd', 'bbbb'];
-foreach($names as $name) {
-    $cfg[$name] = str_replace('%name%', $name, $cfgPoolTemplate);
-}
+$cfg['names'] = ['cccc', 'aaaa', 'eeee', 'dddd', 'bbbb'];
 
 $tester = new FPMI\Tester($cfg);
 $tester->start();

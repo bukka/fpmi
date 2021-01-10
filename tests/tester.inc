@@ -73,7 +73,7 @@ class Tester
     /**
      * Configuration template
      *
-     * @var string
+     * @var string|array
      */
     private $configTemplate;
 
@@ -759,14 +759,13 @@ class Tester
                 throw new \Exception('The config template array has to have main config');
             }
             $mainTemplate = $configTemplates['main'];
-            unset($configTemplates['main']);
             if (!is_dir(self::CONF_DIR)) {
                 mkdir(self::CONF_DIR);
             }
-            foreach ($configTemplates as $name => $configTemplate) {
+            foreach ($this->createPoolConfigs($configTemplates) as $name => $poolConfig) {
                 $this->makeFile(
                     'conf',
-                    $this->processTemplate($configTemplate),
+                    $this->processTemplate($poolConfig),
                     self::CONF_DIR,
                     $name
                 );
@@ -776,6 +775,36 @@ class Tester
         }
 
         return $this->makeFile($extension, $this->processTemplate($mainTemplate));
+    }
+
+    /**
+     * Create pool config templates.
+     *
+     * @param array $configTemplates
+     * @return array
+     * @throws \Exception
+     */
+    private function createPoolConfigs(array $configTemplates)
+    {
+        if (!isset($configTemplates['poolTemplate'])) {
+            unset($configTemplates['main']);
+            return $configTemplates;
+        }
+        $poolTemplate = $configTemplates['poolTemplate'];
+        $configs = [];
+        if (isset($configTemplates['count'])) {
+            $start = $configTemplates['start'] ?? 1;
+            for ($i = $start;  $i <= $start + $configTemplates['count']; $i++) {
+                $configs[$i] = str_replace('%index%', $i, $poolTemplate);
+            }
+        } elseif (isset($configTemplates['names'])) {
+            foreach($configTemplates['names'] as $name) {
+                $configs[$name] = str_replace('%name%', $name, $poolTemplate);
+            }
+        } else {
+            throw new \Exception('The config template requires count or names if poolTemplate set');
+        }
+        return $configs;
     }
 
     /**
