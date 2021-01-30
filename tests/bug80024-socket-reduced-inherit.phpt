@@ -30,7 +30,7 @@ $tester->expectLogStartNotices();
 $tester->signal('USR2');
 $tester->expectLogNotice('Reloading in progress ...');
 $tester->expectLogNotice('reloading: .*');
-$tester->expectLogNotice('using inherited socket fd=\d+, "127.0.0.1:\d+"');
+$tester->expectLogNotice('using inherited socket fd=\d+, "[^"]+"', null, 129);
 $tester->expectLogStartNotices();
 $tester->terminate();
 $tester->expectLogTerminatingNotices();

@@ -800,7 +800,7 @@ class Tester
         $configs = [];
         if (isset($configTemplates['count'])) {
             $start = $configTemplates['start'] ?? 1;
-            for ($i = $start;  $i <= $start + $configTemplates['count']; $i++) {
+            for ($i = $start;  $i < $start + $configTemplates['count']; $i++) {
                 $configs[$i] = str_replace('%index%', $i, $poolTemplate);
             }
         } elseif (isset($configTemplates['names'])) {
@@ -1160,15 +1160,35 @@ class Tester
     }
 
     /**
+     * Expect log entry.
+     *
+     * @param string $type The log type
+     * @param string $message The expected message
+     * @param string|null $pool The pool for pool prefixed log entry
+     * @param int $count The number of items
+     * @return bool
+     */
+    private function expectLogEntry(string $type, string $message, $pool = null, $count = 1)
+    {
+        for ($i = 0; $i < $count; $i++) {
+            if (!$this->logTool->expectEntry($type, $this->getLastLogLine(), $message, $pool)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
      * Expect a log debug message.
      *
      * @param string $message
      * @param string|null $pool
+     * @param int $count
      * @return bool
      */
-    public function expectLogDebug(string $message, $pool = null)
+    public function expectLogDebug(string $message, $pool = null, $count = 1)
     {
-        return $this->logTool->expectDebug($this->getLastLogLine(), $message, $pool);
+        return $this->expectLogEntry(LogTool::DEBUG, $message, $pool, $count);
     }
 
     /**
@@ -1176,11 +1196,12 @@ class Tester
      *
      * @param string $message
      * @param string|null $pool
+     * @param int $count
      * @return bool
      */
-    public function expectLogNotice(string $message, $pool = null)
+    public function expectLogNotice(string $message, $pool = null, $count = 1)
     {
-        return $this->logTool->expectNotice($this->getLastLogLine(), $message, $pool);
+        return $this->expectLogEntry(LogTool::NOTICE, $message, $pool, $count);
     }
 
     /**
@@ -1188,11 +1209,12 @@ class Tester
      *
      * @param string $message
      * @param string|null $pool
+     * @param int $count
      * @return bool
      */
-    public function expectLogWarning(string $message, $pool = null)
+    public function expectLogWarning(string $message, $pool = null, $count = 1)
     {
-        return $this->logTool->expectWarning($this->getLastLogLine(), $message, $pool);
+        return $this->expectLogEntry(LogTool::WARNING, $message, $pool, $count);
     }
 
     /**
@@ -1200,11 +1222,12 @@ class Tester
      *
      * @param string $message
      * @param string|null $pool
+     * @param int $count
      * @return bool
      */
-    public function expectLogError(string $message, $pool = null)
+    public function expectLogError(string $message, $pool = null, $count = 1)
     {
-        return $this->logTool->expectError($this->getLastLogLine(), $message, $pool);
+        return $this->expectLogEntry(LogTool::ERROR, $message, $pool, $count);
     }
 
     /**
@@ -1212,11 +1235,12 @@ class Tester
      *
      * @param string $message
      * @param string|null $pool
+     * @param int $count
      * @return bool
      */
-    public function expectLogAlert(string $message, $pool = null)
+    public function expectLogAlert(string $message, $pool = null, $count = 1)
     {
-        return $this->logTool->expectAlert($this->getLastLogLine(), $message, $pool);
+        return $this->expectLogEntry(LogTool::ALERT, $message, $pool, $count);
     }
 
     /**

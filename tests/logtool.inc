@@ -8,6 +8,12 @@ class LogTool
     const P_PREFIX = '\[pool unconfined\] child \d+ said into stderr: ';
     const FINAL_SUFFIX = ', pipe is closed';
 
+    const DEBUG = 'DEBUG';
+    const NOTICE = 'NOTICE';
+    const WARNING = 'WARNING';
+    const ERROR = 'ERROR';
+    const ALERT = 'ALERT';
+
     /**
      * @var string
      */
@@ -358,7 +364,7 @@ class LogTool
      */
     public function expectDebug(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('DEBUG', $line, $expectedMessage, $pool);
+        return $this->expectEntry(self::DEBUG, $line, $expectedMessage, $pool);
     }
 
     /**
@@ -369,7 +375,7 @@ class LogTool
      */
     public function expectNotice(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('NOTICE', $line, $expectedMessage, $pool);
+        return $this->expectEntry(self::NOTICE, $line, $expectedMessage, $pool);
     }
 
     /**
@@ -380,7 +386,7 @@ class LogTool
      */
     public function expectWarning(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('WARNING', $line, $expectedMessage, $pool);
+        return $this->expectEntry(self::WARNING, $line, $expectedMessage, $pool);
     }
 
     /**
@@ -391,7 +397,7 @@ class LogTool
      */
     public function expectError(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('ERROR', $line, $expectedMessage, $pool);
+        return $this->expectEntry(self::ERROR, $line, $expectedMessage, $pool);
     }
 
     /**
@@ -402,7 +408,7 @@ class LogTool
      */
     public function expectAlert(string $line, string $expectedMessage, $pool = null)
     {
-        return $this->expectEntry('ALERT', $line, $expectedMessage, $pool);
+        return $this->expectEntry(self::ALERT, $line, $expectedMessage, $pool);
     }
 
 
