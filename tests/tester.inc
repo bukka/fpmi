@@ -292,8 +292,8 @@ class Tester
         $this->code = $code;
         $this->options = $options;
         $this->fileName = $fileName ?: self::getCallerFileName();
-        $this->logTool = new LogTool();
         $this->debug = (bool) getenv('TEST_FPMI_DEBUG');
+        $this->logTool = new LogTool($this->debug);
     }
 
     /**
@@ -690,6 +690,12 @@ class Tester
             if ((empty($ignore) || !strpos($line, $ignore)) && (!$skipBlank || strlen(trim($line)) > 0)) {
                 $lines[] = $line;
                 $number--;
+            }
+        }
+
+        if ($this->debug) {
+            foreach ($lines as $line) {
+                echo "LOG LINE: " . $line;
             }
         }
 
@@ -1131,11 +1137,6 @@ class Tester
         } else {
             $logLines = $this->getLogLines(1, true);
             $this->logTool->checkTruncatedMessage($logLines[0] ?? '');
-        }
-        if ($this->debug) {
-            $this->message("-------------- LOG LINES: -------------");
-            var_dump($logLines);
-            $this->message("---------------------------------------\n");
         }
     }
 
