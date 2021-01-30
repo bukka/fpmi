@@ -158,7 +158,14 @@ class Tester
                 unlink($filePath);
             }
         }
-        // clean config files
+
+        self::cleanConfigFiles();
+    }
+
+    /**
+     * Clean config files
+     */
+    static public function cleanConfigFiles() {
         if (is_dir(self::CONF_DIR)) {
             foreach(glob(self::CONF_DIR . '/*.conf') as $name) {
                 unlink($name);
@@ -710,6 +717,24 @@ class Tester
         $lines = $this->getLogLines();
 
         return $lines[0] ?? '';
+    }
+
+    /**
+     * Reload FPMi by sending USR2 signal and optionally change config before that.
+     *
+     * @param string|array $configTemplate
+     * @return string
+     * @throws \Exception
+     */
+    public function reload($configTemplate = null)
+    {
+        if (!is_null($configTemplate)) {
+            self::cleanConfigFiles();
+            $this->configTemplate = $configTemplate;
+            $this->createConfig();
+        }
+
+        return $this->signal('USR2');
     }
 
     /**
