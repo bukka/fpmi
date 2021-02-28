@@ -40,6 +40,16 @@ static struct fpmi_array_s sockets_list;
 
 enum { FPMI_GET_USE_SOCKET = 1, FPMI_STORE_SOCKET = 2, FPMI_STORE_USE_SOCKET = 3 };
 
+static inline void fpmi_sockets_env_set(char *envname, unsigned idx) /* {{{ */
+{
+	if (!idx) {
+		strcpy(envname, "FPMI_SOCKETS");
+	} else {
+		sprintf(envname, "FPMI_SOCKETS_%d", idx);
+	}
+}
+/* }}} */
+
 static void fpmi_sockets_cleanup(int which, void *arg) /* {{{ */
 {
 	unsigned i;
@@ -83,14 +93,10 @@ static void fpmi_sockets_cleanup(int which, void *arg) /* {{{ */
 
 	if (env_value) {
 		for (i = 0; i < socket_set_count; i++) {
-			if (!i) {
-				strcpy(envname, "FPMI_SOCKETS");
-			} else {
-				sprintf(envname, "FPMI_SOCKETS_%d", i);
-			}
+			fpmi_sockets_env_set(envname, i);
 			setenv(envname, env_value + socket_set[i], 1);
 		}
-		sprintf(envname, "FPMI_SOCKETS_%d", socket_set_count);
+		fpmi_sockets_env_set(envname, socket_set_count);
 		unsetenv(envname);
 		free(env_value);
 	}
@@ -387,11 +393,7 @@ int fpmi_sockets_init_main() /* {{{ */
 
 	/* import inherited sockets */
 	for (i = 0; i < FPMI_ENV_SOCKET_SET_MAX; i++) {
-		if (!i) {
-			strcpy(sockname, "FPMI_SOCKETS");
-		} else {
-			sprintf(sockname, "FPMI_SOCKETS_%d", i);
-		}
+		fpmi_sockets_env_set(sockname, i);
 		inherited = getenv(sockname);
 		if (!inherited) {
 			break;

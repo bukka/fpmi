@@ -433,7 +433,6 @@ class LogTool
         return $this->expectEntry(self::ALERT, $line, $expectedMessage, $pool);
     }
 
-
     /**
      * @param string $msg
      * @return bool

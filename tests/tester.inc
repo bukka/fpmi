@@ -299,8 +299,8 @@ class Tester
         $this->code = $code;
         $this->options = $options;
         $this->fileName = $fileName ?: self::getCallerFileName();
+        $this->logTool = new LogTool();
         $this->debug = (bool) getenv('TEST_FPMI_DEBUG');
-        $this->logTool = new LogTool($this->debug);
     }
 
     /**
