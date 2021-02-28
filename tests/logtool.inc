@@ -287,6 +287,28 @@ class LogTool
      * @param array $lines
      * @return bool
      */
+    public function expectReloadingLines(array $lines)
+    {
+        if (
+            !$this->expectNotice($lines[0], 'Reloading in progress ...') ||
+            !$this->expectNotice($lines[1], 'reloading: .*')
+        ) {
+            return false;
+        }
+
+        for ($i = 2; $i < count($lines) - 2; $i++) {
+            if (!$this->expectNotice($lines[$i], 'using inherited socket fd=\d+, "[^"]+"')) {
+                return false;
+            }
+        }
+
+        return $this->expectStartingLines(array_splice($lines, $i));
+    }
+
+    /**
+     * @param array $lines
+     * @return bool
+     */
     public function expectStartingLines(array $lines)
     {
         if ($this->getError()) {

@@ -1124,6 +1124,16 @@ class Tester
     }
 
     /**
+     * Expect reloading lines to be logged.
+     *
+     * @param int $socketCount
+     */
+    public function expectLogReloadingNotices($socketCount = 1)
+    {
+        $this->logTool->expectReloadingLines($this->getLogLines($socketCount + 4));
+    }
+
+    /**
      * Expect starting lines to be logged.
      */
     public function expectLogStartNotices()
