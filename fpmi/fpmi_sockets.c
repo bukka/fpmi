@@ -43,6 +43,10 @@ enum { FPMI_GET_USE_SOCKET = 1, FPMI_STORE_SOCKET = 2, FPMI_STORE_USE_SOCKET = 3
 static void fpmi_sockets_cleanup(int which, void *arg) /* {{{ */
 {
 	unsigned i;
+	unsigned socket_set_count = 0;
+	unsigned socket_set[FPMI_ENV_SOCKET_SET_MAX];
+	unsigned socket_set_buf = 0;
+	char envname[32];
 	char *env_value = 0;
 	int p = 0;
 	struct listening_socket_s *ls = sockets_list.data;
@@ -53,8 +57,20 @@ static void fpmi_sockets_cleanup(int which, void *arg) /* {{{ */
 		} else { /* on PARENT EXEC we want socket fds to be inherited through environment variable */
 			char fd[32];
 			sprintf(fd, "%d", ls->sock);
-			env_value = realloc(env_value, p + (p ? 1 : 0) + strlen(ls->key) + 1 + strlen(fd) + 1);
-			p += sprintf(env_value + p, "%s%s=%s", p ? "," : "", ls->key, fd);
+
+			socket_set_buf = (i % FPMI_ENV_SOCKET_SET_SIZE == 0 && i) ? 1 : 0;
+			env_value = realloc(env_value, p + (p ? 1 : 0) + strlen(ls->key) + 1 + strlen(fd) + socket_set_buf + 1);
+
+			if (i % FPMI_ENV_SOCKET_SET_SIZE == 0) {
+				socket_set[socket_set_count] = p + socket_set_buf;
+				socket_set_count++;
+				if (i) {
+					*(env_value + p + 1) = 0;
+				}
+			}
+
+			p += sprintf(env_value + p + socket_set_buf, "%s%s=%s", (p && !socket_set_buf) ? "," : "", ls->key, fd);
+			p += socket_set_buf;
 		}
 
 		if (which == FPMI_CLEANUP_PARENT_EXIT_MAIN) {
@@ -66,7 +82,14 @@ static void fpmi_sockets_cleanup(int which, void *arg) /* {{{ */
 	}
 
 	if (env_value) {
-		setenv("FPMI_SOCKETS", env_value, 1);
+		for (i = 0; i < socket_set_count; i++) {
+			if (!i) {
+				strcpy(envname, "FPMI_SOCKETS");
+			} else {
+				sprintf(envname, "FPMI_SOCKETS_%d", i);
+			}
+			setenv(envname, env_value + socket_set[i], 1);
+		}
 		free(env_value);
 	}
 
@@ -351,7 +374,9 @@ int fpmi_sockets_init_main() /* {{{ */
 {
 	unsigned i, lq_len;
 	struct fpmi_worker_pool_s *wp;
-	char *inherited = getenv("FPMI_SOCKETS");
+	char sockname[32];
+	char sockpath[256];
+	char *inherited;
 	struct listening_socket_s *ls;
 
 	if (0 == fpmi_array_init(&sockets_list, sizeof(struct listening_socket_s), 10)) {
@@ -359,28 +384,46 @@ int fpmi_sockets_init_main() /* {{{ */
 	}
 
 	/* import inherited sockets */
-	while (inherited && *inherited) {
-		char *comma = strchr(inherited, ',');
-		int type, fd_no;
-		char *eq;
-
-		if (comma) {
-			*comma = '\0';
-		}
-
-		eq = strchr(inherited, '=');
-		if (eq) {
-			*eq = '\0';
-			fd_no = atoi(eq + 1);
-			type = fpmi_sockets_domain_from_address(inherited);
-			zlog(ZLOG_NOTICE, "using inherited socket fd=%d, \"%s\"", fd_no, inherited);
-			fpmi_sockets_hash_op(fd_no, 0, inherited, type, FPMI_STORE_SOCKET);
-		}
-
-		if (comma) {
-			inherited = comma + 1;
+	for (i = 0; i < FPMI_ENV_SOCKET_SET_MAX; i++) {
+		if (!i) {
+			strcpy(sockname, "FPMI_SOCKETS");
 		} else {
-			inherited = 0;
+			sprintf(sockname, "FPMI_SOCKETS_%d", i);
+		}
+		inherited = getenv(sockname);
+		if (!inherited) {
+			break;
+		}
+
+		while (inherited && *inherited) {
+			char *comma = strchr(inherited, ',');
+			int type, fd_no;
+			char *eq;
+
+			if (comma) {
+				*comma = '\0';
+			}
+
+			eq = strchr(inherited, '=');
+			if (eq) {
+				int sockpath_len = eq - inherited;
+				if (sockpath_len > 255) {
+					/* this should never happen as UDS limit is lower */
+					sockpath_len = 255;
+				}
+				memcpy(sockpath, inherited, sockpath_len);
+				sockpath[sockpath_len] = '\0';
+				fd_no = atoi(eq + 1);
+				type = fpmi_sockets_domain_from_address(sockpath);
+				zlog(ZLOG_NOTICE, "using inherited socket fd=%d, \"%s\"", fd_no, sockpath);
+				fpmi_sockets_hash_op(fd_no, 0, sockpath, type, FPMI_STORE_SOCKET);
+			}
+
+			if (comma) {
+				inherited = comma + 1;
+			} else {
+				inherited = 0;
+			}
 		}
 	}
 
