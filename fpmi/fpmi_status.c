@@ -396,7 +396,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 				full_post = "]}";
 			}
 		/* OpenMetrics */
-		} else if (fpm_php_get_string_from_table(_GET_str, "openmetrics")) {
+		} else if (fpmi_php_get_string_from_table(_GET_str, "openmetrics")) {
 			sapi_add_header_ex(ZEND_STRL("Content-Type: application/openmetrics-text; version=1.0.0; charset=utf-8"), 1, 1);
 			time_format = "%s";
 
