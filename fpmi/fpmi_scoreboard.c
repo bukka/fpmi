@@ -107,7 +107,7 @@ void fpmi_scoreboard_update(int idle, int active, int lq, int lq_len, int reques
 		if (lq_len >= 0) {
 			scoreboard->lq_len = lq_len;
 		}
-#ifdef HAVE_FPMI_LQ /* prevent unnecessary test */
+#if HAVE_FPMI_LQ /* prevent unnecessary test */
 		if (scoreboard->lq > scoreboard->lq_max) {
 			scoreboard->lq_max = scoreboard->lq;
 		}

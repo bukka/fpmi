@@ -91,11 +91,9 @@ int fpmi_status_export_to_zval(zval *status)
 	add_assoc_long(status, "start-time", scoreboard.start_epoch);
 	add_assoc_long(status, "start-since", now_epoch - scoreboard.start_epoch);
 	add_assoc_long(status, "accepted-conn", scoreboard.requests);
-#ifdef HAVE_FPMI_LQ
 	add_assoc_long(status, "listen-queue", scoreboard.lq);
 	add_assoc_long(status, "max-listen-queue", scoreboard.lq_max);
 	add_assoc_long(status, "listen-queue-len", scoreboard.lq_len);
-#endif
 	add_assoc_long(status, "idle-processes", scoreboard.idle);
 	add_assoc_long(status, "active-processes", scoreboard.active);
 	add_assoc_long(status, "total-processes", scoreboard.idle + scoreboard.active);
@@ -109,14 +107,12 @@ int fpmi_status_export_to_zval(zval *status)
 			continue;
 		}
 		proc_p = &procs[i];
-#ifdef HAVE_FPMI_LQ
 		/* prevent NaN */
 		if (procs[i].cpu_duration.tv_sec == 0 && procs[i].cpu_duration.tv_usec == 0) {
 			cpu = 0.;
 		} else {
 			cpu = (procs[i].last_request_cpu.tms_utime + procs[i].last_request_cpu.tms_stime + procs[i].last_request_cpu.tms_cutime + procs[i].last_request_cpu.tms_cstime) / fpmi_scoreboard_get_tick() / (procs[i].cpu_duration.tv_sec + procs[i].cpu_duration.tv_usec / 1000000.) * 100.;
 		}
-#endif
 
 		array_init(&fpmi_proc_stat);
 		add_assoc_long(&fpmi_proc_stat, "pid", procs[i].pid);
@@ -136,9 +132,7 @@ int fpmi_status_export_to_zval(zval *status)
 		add_assoc_long(&fpmi_proc_stat, "request-length", procs[i].content_length);
 		add_assoc_string(&fpmi_proc_stat, "user", procs[i].auth_user[0] != '\0' ? procs[i].auth_user : "-");
 		add_assoc_string(&fpmi_proc_stat, "script", procs[i].script_filename[0] != '\0' ? procs[i].script_filename : "-");
-#ifdef HAVE_FPMI_LQ
 		add_assoc_double(&fpmi_proc_stat, "last-request-cpu", procs[i].request_stage == FPMI_REQUEST_ACCEPTING ? cpu : 0.);
-#endif
 		add_assoc_long(&fpmi_proc_stat, "last-request-memory", procs[i].request_stage == FPMI_REQUEST_ACCEPTING ? procs[i].memory : 0);
 		add_next_index_zval(&fpmi_proc_stats, &fpmi_proc_stat);
 	}
@@ -255,11 +249,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 					"<tr><th>start time</th><td>%s</td></tr>\n"
 					"<tr><th>start since</th><td>%lu</td></tr>\n"
 					"<tr><th>accepted conn</th><td>%lu</td></tr>\n"
-#ifdef HAVE_FPMI_LQ
 					"<tr><th>listen queue</th><td>%u</td></tr>\n"
 					"<tr><th>max listen queue</th><td>%u</td></tr>\n"
 					"<tr><th>listen queue len</th><td>%d</td></tr>\n"
-#endif
 					"<tr><th>idle processes</th><td>%d</td></tr>\n"
 					"<tr><th>active processes</th><td>%d</td></tr>\n"
 					"<tr><th>total processes</th><td>%d</td></tr>\n"
@@ -285,9 +277,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 						"<th>content length</th>"
 						"<th>user</th>"
 						"<th>script</th>"
-#ifdef HAVE_FPMI_LQ
 						"<th>last request cpu</th>"
-#endif
 						"<th>last request memory</th>"
 					"</tr>\n";
 
@@ -304,9 +294,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 						"<td>%zu</td>"
 						"<td>%s</td>"
 						"<td>%s</td>"
-#ifdef HAVE_FPMI_LQ
 						"<td>%.2f</td>"
-#endif
 						"<td>%zu</td>"
 					"</tr>\n";
 
@@ -327,11 +315,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 				"<start-time>%s</start-time>\n"
 				"<start-since>%lu</start-since>\n"
 				"<accepted-conn>%lu</accepted-conn>\n"
-#ifdef HAVE_FPMI_LQ
 				"<listen-queue>%u</listen-queue>\n"
 				"<max-listen-queue>%u</max-listen-queue>\n"
 				"<listen-queue-len>%d</listen-queue-len>\n"
-#endif
 				"<idle-processes>%d</idle-processes>\n"
 				"<active-processes>%d</active-processes>\n"
 				"<total-processes>%d</total-processes>\n"
@@ -356,9 +342,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 							"<content-length>%zu</content-length>"
 							"<user>%s</user>"
 							"<script>%s</script>"
-#ifdef HAVE_FPMI_LQ
 							"<last-request-cpu>%.2f</last-request-cpu>"
-#endif
 							"<last-request-memory>%zu</last-request-memory>"
 						"</process>\n"
 					;
@@ -377,11 +361,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 				"\"start time\":%s,"
 				"\"start since\":%lu,"
 				"\"accepted conn\":%lu,"
-#ifdef HAVE_FPMI_LQ
 				"\"listen queue\":%u,"
 				"\"max listen queue\":%u,"
 				"\"listen queue len\":%d,"
-#endif
 				"\"idle processes\":%d,"
 				"\"active processes\":%d,"
 				"\"total processes\":%d,"
@@ -407,9 +389,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 					"\"content length\":%zu,"
 					"\"user\":\"%s\","
 					"\"script\":\"%s\","
-#ifdef HAVE_FPMI_LQ
 					"\"last request cpu\":%.2f,"
-#endif
 					"\"last request memory\":%zu"
 					"}";
 
@@ -482,11 +462,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 				"start time:           %s\n"
 				"start since:          %lu\n"
 				"accepted conn:        %lu\n"
-#ifdef HAVE_FPMI_LQ
 				"listen queue:         %u\n"
 				"max listen queue:     %u\n"
 				"listen queue len:     %d\n"
-#endif
 				"idle processes:       %d\n"
 				"active processes:     %d\n"
 				"total processes:      %d\n"
@@ -509,9 +487,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 						"content length:       %zu\n"
 						"user:                 %s\n"
 						"script:               %s\n"
-#ifdef HAVE_FPMI_LQ
 						"last request cpu:     %.2f\n"
-#endif
 						"last request memory:  %zu\n";
 				}
 		}
@@ -524,11 +500,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 				time_buffer,
 				now_epoch - scoreboard.start_epoch,
 				scoreboard.requests,
-#ifdef HAVE_FPMI_LQ
 				scoreboard.lq,
 				scoreboard.lq_max,
 				scoreboard.lq_len,
-#endif
 				scoreboard.idle,
 				scoreboard.active,
 				scoreboard.idle + scoreboard.active,
@@ -545,11 +519,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 					time_buffer,
 					(unsigned long) (now_epoch - scoreboard.start_epoch),
 					scoreboard.requests,
-#ifdef HAVE_FPMI_LQ
 					scoreboard.lq,
 					scoreboard.lq_max,
 					scoreboard.lq_len,
-#endif
 					scoreboard.idle,
 					scoreboard.active,
 					scoreboard.idle + scoreboard.active,
@@ -563,11 +535,9 @@ int fpmi_status_handle_request(void) /* {{{ */
 					(unsigned long long) scoreboard.start_epoch,
 					(unsigned long) (now_epoch - scoreboard.start_epoch),
 					scoreboard.requests,
-#ifdef HAVE_FPMI_LQ
 					scoreboard.lq,
 					scoreboard.lq_max,
 					scoreboard.lq_len,
-#endif
 					scoreboard.idle,
 					scoreboard.active,
 					scoreboard.idle + scoreboard.active,
@@ -591,9 +561,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 			zend_string *tmp_query_string;
 			char *query_string;
 			struct timeval duration, now;
-#ifdef HAVE_FPMI_LQ
 			float cpu;
-#endif
 
 			fpmi_clock_get(&now);
 
@@ -633,14 +601,12 @@ int fpmi_status_handle_request(void) /* {{{ */
 					}
 				}
 
-#ifdef HAVE_FPMI_LQ
 				/* prevent NaN */
 				if (proc.cpu_duration.tv_sec == 0 && proc.cpu_duration.tv_usec == 0) {
 					cpu = 0.;
 				} else {
 					cpu = (proc.last_request_cpu.tms_utime + proc.last_request_cpu.tms_stime + proc.last_request_cpu.tms_cutime + proc.last_request_cpu.tms_cstime) / fpmi_scoreboard_get_tick() / (proc.cpu_duration.tv_sec + proc.cpu_duration.tv_usec / 1000000.) * 100.;
 				}
-#endif
 
 				if (proc.request_stage == FPMI_REQUEST_ACCEPTING) {
 					duration = proc.duration;
@@ -662,9 +628,7 @@ int fpmi_status_handle_request(void) /* {{{ */
 					proc.content_length,
 					proc.auth_user[0] != '\0' ? proc.auth_user : "-",
 					proc.script_filename[0] != '\0' ? proc.script_filename : "-",
-#ifdef HAVE_FPMI_LQ
 					proc.request_stage == FPMI_REQUEST_ACCEPTING ? cpu : 0.,
-#endif
 					proc.request_stage == FPMI_REQUEST_ACCEPTING ? proc.memory : 0);
 				PUTS(buffer);
 				efree(buffer);
