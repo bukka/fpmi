@@ -10,10 +10,11 @@ class Status
      * @var array
      */
     private $contentTypes = [
-        'plain' => 'text/plain',
-        'html'  => 'text/html',
-        'xml'   => 'text/xml',
-        'json'  => 'application/json',
+        'plain'       => 'text/plain',
+        'html'        => 'text/html',
+        'xml'         => 'text/xml',
+        'json'        => 'application/json',
+        'openmetrics' => 'application/openmetrics-text; version=1.0.0; charset=utf-8'
     ];
 
     /**
